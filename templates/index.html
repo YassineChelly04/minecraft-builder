@@ -16,6 +16,8 @@
       --text:     #e2e8f0;
       --muted:    #64748b;
       --radius:   8px;
+      --ext:      #f97316;
+      --int:      #a855f7;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,22 +32,16 @@
     }
 
     header {
-      padding: 20px 32px;
+      padding: 18px 32px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    header h1 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
 
-    header .badge {
-      background: var(--accent);
-      color: #000;
+    .badge {
       font-size: 0.65rem;
       font-weight: 700;
       padding: 2px 8px;
@@ -53,32 +49,34 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+    .badge-v  { background: var(--accent); color: #000; }
+    .badge-ext { background: rgba(249,115,22,0.2); color: var(--ext); border: 1px solid rgba(249,115,22,0.35); }
+    .badge-int { background: rgba(168,85,247,0.2); color: var(--int); border: 1px solid rgba(168,85,247,0.35); }
 
     .main {
       display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 0;
+      grid-template-columns: 400px 1fr;
       flex: 1;
-      height: calc(100vh - 65px);
+      height: calc(100vh - 61px);
+      overflow: hidden;
     }
 
-    /* Left panel */
     .panel-left {
       border-right: 1px solid var(--border);
-      padding: 28px 24px;
+      padding: 24px 20px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
       overflow-y: auto;
     }
 
     .section-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--muted);
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
 
     textarea {
@@ -88,32 +86,19 @@
       border-radius: var(--radius);
       color: var(--text);
       font-family: inherit;
-      font-size: 0.95rem;
-      padding: 12px 14px;
+      font-size: 0.92rem;
+      padding: 11px 13px;
       resize: vertical;
-      min-height: 120px;
+      min-height: 110px;
       outline: none;
       transition: border-color 0.15s;
       line-height: 1.5;
     }
+    textarea:focus { border-color: var(--accent); }
 
-    textarea:focus {
-      border-color: var(--accent);
-    }
+    .coords-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
 
-    .coords-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-    }
-
-    .coord-field label {
-      display: block;
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-bottom: 5px;
-      font-weight: 600;
-    }
+    .coord-field label { display: block; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
 
     .coord-field input {
       width: 100%;
@@ -122,225 +107,146 @@
       border-radius: var(--radius);
       color: var(--text);
       font-family: 'Consolas', monospace;
-      font-size: 0.95rem;
-      padding: 9px 12px;
+      font-size: 0.92rem;
+      padding: 8px 11px;
       outline: none;
       transition: border-color 0.15s;
     }
-
-    .coord-field input:focus {
-      border-color: var(--accent2);
-    }
+    .coord-field input:focus { border-color: var(--accent2); }
 
     .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: var(--radius);
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 18px; border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: 0.92rem; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s, transform 0.1s; width: 100%;
     }
-
     .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .btn-generate {
-      background: var(--accent);
-      color: #000;
-    }
-
-    .btn-execute {
-      background: var(--accent2);
-      color: #000;
-    }
-
-    .btn-execute:disabled {
-      background: var(--surface);
-      color: var(--muted);
-      border: 1px solid var(--border);
-    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-generate { background: var(--accent); color: #000; }
+    .btn-execute  { background: var(--accent2); color: #000; }
+    .btn-execute:disabled { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
 
     .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(0,0,0,0.3);
-      border-top-color: #000;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: none;
+      width: 15px; height: 15px;
+      border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
+      border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
     }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .intent-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      font-size: 0.82rem;
-      line-height: 1.6;
-      display: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 13px; font-size: 0.8rem;
+      line-height: 1.65; display: none;
     }
+    .intent-box .kv { display: flex; gap: 8px; margin-bottom: 3px; }
+    .intent-box .k  { color: var(--muted); min-width: 76px; }
+    .intent-box .v  { color: var(--accent); font-family: 'Consolas', monospace; font-size: 0.78rem; }
 
-    .intent-box .kv {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .intent-box .k {
-      color: var(--muted);
-      min-width: 80px;
-    }
-
-    .intent-box .v {
-      color: var(--accent);
-      font-family: 'Consolas', monospace;
-    }
+    .hint { color: var(--muted); font-size: 0.73rem; line-height: 1.55; }
 
     /* Right panel */
     .panel-right {
-      padding: 28px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      overflow: hidden;
+      display: flex; flex-direction: column; overflow: hidden;
     }
 
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 32px;
+    .tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      padding: 0 24px; flex-shrink: 0;
     }
+
+    .tab {
+      padding: 13px 18px; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s; user-select: none;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active-all { color: var(--accent2); border-color: var(--accent2); }
+    .tab.active-ext { color: var(--ext);    border-color: var(--ext); }
+    .tab.active-int { color: var(--int);    border-color: var(--int); }
+
+    .tab-count {
+      font-size: 0.68rem; padding: 1px 6px; border-radius: 999px;
+      font-weight: 700; background: var(--border); color: var(--muted);
+    }
+
+    .right-body {
+      flex: 1; display: flex; flex-direction: column; gap: 14px;
+      padding: 18px 24px; overflow: hidden;
+    }
+
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; flex-shrink: 0; }
 
     .pill {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
+      font-size: 0.7rem; font-weight: 700; padding: 2px 9px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: 0.07em;
     }
-
     .pill-ok   { background: rgba(74,222,128,0.15); color: var(--accent); border: 1px solid rgba(74,222,128,0.3); }
     .pill-err  { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
-    .pill-warn { background: rgba(251,191,36,0.15);  color: var(--warn);   border: 1px solid rgba(251,191,36,0.3); }
-
-    .cmd-count {
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
+    .cmd-count { color: var(--muted); font-size: 0.8rem; }
 
     .errors-list {
-      background: rgba(248,113,113,0.07);
-      border: 1px solid rgba(248,113,113,0.25);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      font-size: 0.82rem;
-      color: var(--danger);
-      line-height: 1.7;
-      display: none;
+      background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25);
+      border-radius: var(--radius); padding: 11px 13px;
+      font-size: 0.8rem; color: var(--danger); line-height: 1.7; display: none; flex-shrink: 0;
     }
 
     .commands-container {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow-y: auto;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 0.82rem;
-      line-height: 1.6;
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; line-height: 1.6;
     }
 
     .commands-container .empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; color: var(--muted); font-size: 0.88rem;
     }
+
+    .agent-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; background: rgba(255,255,255,0.025);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .agent-header.ext { color: var(--ext); }
+    .agent-header.int { color: var(--int); }
+    .agent-header .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .agent-header .dot-ext { background: var(--ext); }
+    .agent-header .dot-int { background: var(--int); }
 
     .cmd-row {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      padding: 6px 14px;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 14px; border-bottom: 1px solid rgba(42,45,58,0.6);
       transition: background 0.1s;
     }
+    .cmd-row:hover { background: rgba(255,255,255,0.025); }
+    .cmd-row.ext-row { border-left: 2px solid rgba(249,115,22,0.4); }
+    .cmd-row.int-row { border-left: 2px solid rgba(168,85,247,0.4); }
 
-    .cmd-row:last-child { border-bottom: none; }
-    .cmd-row:hover { background: rgba(255,255,255,0.03); }
-
-    .cmd-num {
-      color: var(--muted);
-      font-size: 0.7rem;
-      min-width: 28px;
-      text-align: right;
-      user-select: none;
-    }
-
+    .cmd-num { color: var(--muted); font-size: 0.68rem; min-width: 28px; text-align: right; user-select: none; }
     .cmd-text { color: var(--text); word-break: break-all; }
+    .kw-fill    { color: var(--accent2); font-weight: 600; }
+    .kw-setblock { color: var(--warn); font-weight: 600; }
+    .kw-block   { color: var(--accent); }
 
-    .cmd-text .kw-fill    { color: var(--accent2); font-weight: 600; }
-    .cmd-text .kw-setblock { color: var(--warn);   font-weight: 600; }
-    .cmd-text .kw-block   { color: var(--accent); }
-
+    /* Countdown */
     .countdown-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 100;
-      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px; z-index: 100;
     }
+    .countdown-number { font-size: 6rem; font-weight: 900; color: var(--accent2); line-height: 1; }
+    .countdown-msg { font-size: 1rem; color: var(--text); }
 
-    .countdown-number {
-      font-size: 6rem;
-      font-weight: 900;
-      color: var(--accent2);
-      line-height: 1;
-    }
-
-    .countdown-msg {
-      font-size: 1.1rem;
-      color: var(--text);
-    }
-
+    /* Toast */
     .toast {
-      position: fixed;
-      bottom: 28px;
-      right: 28px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 20px;
-      font-size: 0.88rem;
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 13px 18px; font-size: 0.86rem;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      transform: translateY(60px);
-      opacity: 0;
-      transition: all 0.25s ease;
-      z-index: 200;
-      max-width: 320px;
+      transform: translateY(60px); opacity: 0;
+      transition: all 0.25s ease; z-index: 200; max-width: 300px;
     }
-
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { border-color: rgba(74,222,128,0.4); }
     .toast.error   { border-color: rgba(248,113,113,0.4); }
@@ -349,14 +255,16 @@
 <body>
 
 <header>
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <rect x="2" y="2" width="9" height="9" rx="1" fill="#4ade80"/>
     <rect x="13" y="2" width="9" height="9" rx="1" fill="#22d3ee"/>
-    <rect x="2" y="13" width="9" height="9" rx="1" fill="#22d3ee"/>
-    <rect x="13" y="13" width="9" height="9" rx="1" fill="#4ade80"/>
+    <rect x="2" y="13" width="9" height="9" rx="1" fill="#f97316"/>
+    <rect x="13" y="13" width="9" height="9" rx="1" fill="#a855f7"/>
   </svg>
   <h1>Minecraft Builder</h1>
-  <span class="badge">v0</span>
+  <span class="badge badge-v">v1</span>
+  <span class="badge badge-ext">Exterior Agent</span>
+  <span class="badge badge-int">Interior Agent</span>
 </header>
 
 <div class="main">
@@ -366,24 +274,15 @@
 
     <div>
       <div class="section-label">Build Prompt</div>
-      <textarea id="prompt" placeholder="e.g. Build a large industrial warehouse with gray concrete walls and a flat iron roof"></textarea>
+      <textarea id="prompt" placeholder="e.g. Build a medieval stone house with a cozy interior living room and bedroom"></textarea>
     </div>
 
     <div>
       <div class="section-label">Origin Coordinates</div>
       <div class="coords-grid">
-        <div class="coord-field">
-          <label>X</label>
-          <input type="number" id="ox" value="0" />
-        </div>
-        <div class="coord-field">
-          <label>Y</label>
-          <input type="number" id="oy" value="64" />
-        </div>
-        <div class="coord-field">
-          <label>Z</label>
-          <input type="number" id="oz" value="0" />
-        </div>
+        <div class="coord-field"><label>X</label><input type="number" id="ox" value="0" /></div>
+        <div class="coord-field"><label>Y</label><input type="number" id="oy" value="64" /></div>
+        <div class="coord-field"><label>Z</label><input type="number" id="oz" value="0" /></div>
       </div>
     </div>
 
@@ -398,8 +297,9 @@
       Execute in Minecraft
     </button>
 
-    <div style="color: var(--muted); font-size: 0.75rem; line-height: 1.5;">
-      Switch to Minecraft <em>before</em> clicking Execute. A 3-second countdown gives you time to focus the window.
+    <div class="hint">
+      Switch to Minecraft <em>before</em> clicking Execute. A 3-second countdown gives you time to focus the window.<br><br>
+      Both <strong style="color:var(--ext)">Exterior</strong> and <strong style="color:var(--int)">Interior</strong> agents run in parallel — exterior commands paste first.
     </div>
 
   </div>
@@ -407,14 +307,20 @@
   <!-- RIGHT PANEL -->
   <div class="panel-right">
 
-    <div class="status-bar" id="statusBar">
-      <span style="color: var(--muted); font-size: 0.85rem;">Generate commands to see them here.</span>
+    <div class="tabs">
+      <div class="tab active-all" id="tab-all"  onclick="switchTab('all')">All Commands <span class="tab-count" id="cnt-all">0</span></div>
+      <div class="tab"           id="tab-ext"  onclick="switchTab('ext')">Exterior Agent <span class="tab-count" id="cnt-ext">0</span></div>
+      <div class="tab"           id="tab-int"  onclick="switchTab('int')">Interior Agent <span class="tab-count" id="cnt-int">0</span></div>
     </div>
 
-    <div class="errors-list" id="errorsList"></div>
-
-    <div class="commands-container" id="commandsContainer">
-      <div class="empty">No commands yet</div>
+    <div class="right-body">
+      <div class="status-bar" id="statusBar">
+        <span style="color: var(--muted); font-size: 0.82rem;">Generate commands to see them here.</span>
+      </div>
+      <div class="errors-list" id="errorsList"></div>
+      <div class="commands-container" id="commandsContainer">
+        <div class="empty">No commands yet</div>
+      </div>
     </div>
 
   </div>
@@ -424,14 +330,14 @@
 <div class="countdown-overlay" id="countdownOverlay">
   <div class="countdown-msg">Switch to Minecraft now!</div>
   <div class="countdown-number" id="countdownNum">3</div>
-  <div class="countdown-msg" style="color: var(--muted)">Execution starts automatically</div>
+  <div class="countdown-msg" style="color: var(--muted)">Pasting starts automatically…</div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-  let generatedCommands = [];
+  let allCmds = [], extCmds = [], intCmds = [];
+  let currentTab = 'all';
 
   async function generate() {
     const prompt = document.getElementById('prompt').value.trim();
@@ -454,20 +360,18 @@
       });
       const data = await res.json();
 
-      if (data.error) {
-        showStatus('error', data.error);
-        showToast(data.error, 'error');
-        return;
-      }
+      if (data.error) { showStatus('error', data.error); showToast(data.error, 'error'); return; }
 
-      generatedCommands = data.commands;
+      extCmds = data.exterior_commands || [];
+      intCmds = data.interior_commands || [];
+      allCmds = data.commands || [];
+
+      updateTabCounts();
       renderIntent(data.intent);
-      renderCommands(data.commands);
+      renderCurrentTab();
       renderValidation(data.valid, data.errors);
 
-      if (data.valid) {
-        document.getElementById('btnExecute').disabled = false;
-      }
+      if (data.valid) document.getElementById('btnExecute').disabled = false;
     } catch (e) {
       showStatus('error', 'Network error: ' + e.message);
       showToast('Network error', 'error');
@@ -476,8 +380,116 @@
     }
   }
 
+  function switchTab(tab) {
+    currentTab = tab;
+    ['all','ext','int'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      el.className = 'tab' + (t === tab ? ` active-${t}` : '');
+    });
+    renderCurrentTab();
+  }
+
+  function renderCurrentTab() {
+    if (currentTab === 'all') renderCommands(allCmds, 'all');
+    else if (currentTab === 'ext') renderCommands(extCmds, 'ext');
+    else renderCommands(intCmds, 'int');
+  }
+
+  function updateTabCounts() {
+    document.getElementById('cnt-all').textContent = allCmds.length;
+    document.getElementById('cnt-ext').textContent = extCmds.length;
+    document.getElementById('cnt-int').textContent = intCmds.length;
+  }
+
+  function renderCommands(cmds, mode) {
+    const container = document.getElementById('commandsContainer');
+    if (!cmds || cmds.length === 0) {
+      container.innerHTML = '<div class="empty">No commands in this category</div>';
+      return;
+    }
+
+    if (mode === 'all') {
+      let html = '';
+      if (extCmds.length) {
+        html += `<div class="agent-header ext"><div class="dot dot-ext"></div>Exterior Agent — ${extCmds.length} commands</div>`;
+        html += extCmds.map((cmd, i) =>
+          `<div class="cmd-row ext-row"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
+        ).join('');
+      }
+      if (intCmds.length) {
+        html += `<div class="agent-header int"><div class="dot dot-int"></div>Interior Agent — ${intCmds.length} commands</div>`;
+        html += intCmds.map((cmd, i) =>
+          `<div class="cmd-row int-row"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
+        ).join('');
+      }
+      container.innerHTML = html;
+    } else {
+      const cls = mode + '-row';
+      container.innerHTML = cmds.map((cmd, i) =>
+        `<div class="cmd-row ${cls}"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
+      ).join('');
+    }
+  }
+
+  function hl(cmd) {
+    return cmd
+      .replace(/^\/fill/, '<span class="kw-fill">/fill</span>')
+      .replace(/^\/setblock/, '<span class="kw-setblock">/setblock</span>')
+      .replace(/(minecraft:\w+)/g, '<span class="kw-block">$1</span>');
+  }
+
+  function renderIntent(intent) {
+    const box = document.getElementById('intentBox');
+    if (!intent) { box.style.display = 'none'; return; }
+    const s = intent.size || {}, m = intent.materials || {};
+    box.innerHTML = `
+      <div class="kv"><span class="k">Type</span><span class="v">${intent.structure_type||'—'}</span></div>
+      <div class="kv"><span class="k">Size</span><span class="v">${s.x||'?'} × ${s.y||'?'} × ${s.z||'?'}</span></div>
+      <div class="kv"><span class="k">Style</span><span class="v">${intent.style||'—'}</span></div>
+      <div class="kv"><span class="k">Walls</span><span class="v">${m.walls||'—'}</span></div>
+      <div class="kv"><span class="k">Floor</span><span class="v">${m.floor||'—'}</span></div>
+      <div class="kv"><span class="k">Roof</span><span class="v">${m.roof||'—'}</span></div>
+      <div class="kv"><span class="k">Accent</span><span class="v">${m.accent||'—'}</span></div>
+    `;
+    box.style.display = 'block';
+  }
+
+  function renderValidation(valid, errors) {
+    const statusBar = document.getElementById('statusBar');
+    const errorsList = document.getElementById('errorsList');
+    if (valid) {
+      statusBar.innerHTML = `<span class="pill pill-ok">Valid</span><span class="cmd-count">${allCmds.length} commands — ${extCmds.length} exterior · ${intCmds.length} interior</span>`;
+      errorsList.style.display = 'none';
+    } else {
+      statusBar.innerHTML = `<span class="pill pill-err">Invalid</span><span class="cmd-count">${errors.length} error${errors.length!==1?'s':''} found</span>`;
+      errorsList.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+      errorsList.style.display = 'block';
+    }
+  }
+
+  function showStatus(type, msg) {
+    document.getElementById('statusBar').innerHTML =
+      `<span class="pill pill-err">${type}</span><span class="cmd-count">${msg}</span>`;
+  }
+
+  function clearResults() {
+    allCmds = []; extCmds = []; intCmds = [];
+    updateTabCounts();
+    document.getElementById('intentBox').style.display = 'none';
+    document.getElementById('commandsContainer').innerHTML = '<div class="empty">Generating… (both agents running in parallel)</div>';
+    document.getElementById('statusBar').innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">Running Exterior + Interior agents…</span>';
+    document.getElementById('errorsList').style.display = 'none';
+    document.getElementById('btnExecute').disabled = true;
+  }
+
+  function setGenLoading(on) {
+    document.getElementById('genSpinner').style.display = on ? 'block' : 'none';
+    document.getElementById('genLabel').textContent = on ? 'Running agents…' : 'Generate Commands';
+    document.getElementById('btnGenerate').disabled = on;
+  }
+
   function startCountdown() {
-    if (generatedCommands.length === 0) return;
+    if (!allCmds.length) return;
     const overlay = document.getElementById('countdownOverlay');
     const num = document.getElementById('countdownNum');
     overlay.style.display = 'flex';
@@ -485,13 +497,8 @@
     num.textContent = count;
     const iv = setInterval(() => {
       count--;
-      if (count === 0) {
-        clearInterval(iv);
-        overlay.style.display = 'none';
-        runExecute();
-      } else {
-        num.textContent = count;
-      }
+      if (count === 0) { clearInterval(iv); overlay.style.display = 'none'; runExecute(); }
+      else num.textContent = count;
     }, 1000);
   }
 
@@ -501,14 +508,14 @@
       const res = await fetch('/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commands: generatedCommands }),
+        body: JSON.stringify({ commands: allCmds }),
       });
       const data = await res.json();
       if (data.error) {
         showToast('Execution error: ' + data.error, 'error');
         document.getElementById('btnExecute').disabled = false;
       } else {
-        showToast(`Done! Sent ${data.count} command${data.count !== 1 ? 's' : ''}.`, 'success');
+        showToast(`Done! Sent ${data.count} commands (${extCmds.length} ext · ${intCmds.length} int).`, 'success');
       }
     } catch (e) {
       showToast('Network error during execution', 'error');
@@ -516,92 +523,12 @@
     }
   }
 
-  function renderIntent(intent) {
-    const box = document.getElementById('intentBox');
-    if (!intent) { box.style.display = 'none'; return; }
-
-    const s = intent.size || {};
-    const m = intent.materials || {};
-    box.innerHTML = `
-      <div class="kv"><span class="k">Type</span><span class="v">${intent.structure_type || '—'}</span></div>
-      <div class="kv"><span class="k">Size</span><span class="v">${s.x || '?'} × ${s.y || '?'} × ${s.z || '?'}</span></div>
-      <div class="kv"><span class="k">Style</span><span class="v">${intent.style || '—'}</span></div>
-      <div class="kv"><span class="k">Walls</span><span class="v">${m.walls || '—'}</span></div>
-      <div class="kv"><span class="k">Floor</span><span class="v">${m.floor || '—'}</span></div>
-      <div class="kv"><span class="k">Roof</span><span class="v">${m.roof || '—'}</span></div>
-    `;
-    box.style.display = 'block';
-  }
-
-  function renderCommands(commands) {
-    const container = document.getElementById('commandsContainer');
-    if (!commands || commands.length === 0) {
-      container.innerHTML = '<div class="empty">No commands generated</div>';
-      return;
-    }
-    container.innerHTML = commands.map((cmd, i) => {
-      return `<div class="cmd-row">
-        <span class="cmd-num">${i + 1}</span>
-        <span class="cmd-text">${highlight(cmd)}</span>
-      </div>`;
-    }).join('');
-  }
-
-  function highlight(cmd) {
-    return cmd
-      .replace(/^\/fill/, '<span class="kw-fill">/fill</span>')
-      .replace(/^\/setblock/, '<span class="kw-setblock">/setblock</span>')
-      .replace(/(minecraft:\w+)/g, '<span class="kw-block">$1</span>');
-  }
-
-  function renderValidation(valid, errors) {
-    const statusBar = document.getElementById('statusBar');
-    const errorsList = document.getElementById('errorsList');
-    const count = generatedCommands.length;
-
-    if (valid) {
-      statusBar.innerHTML = `
-        <span class="pill pill-ok">Valid</span>
-        <span class="cmd-count">${count} command${count !== 1 ? 's' : ''} ready to execute</span>
-      `;
-      errorsList.style.display = 'none';
-    } else {
-      statusBar.innerHTML = `
-        <span class="pill pill-err">Invalid</span>
-        <span class="cmd-count">${errors.length} error${errors.length !== 1 ? 's' : ''} — fix before executing</span>
-      `;
-      errorsList.innerHTML = errors.map(e => `• ${e}`).join('<br>');
-      errorsList.style.display = 'block';
-    }
-  }
-
-  function showStatus(type, msg) {
-    const bar = document.getElementById('statusBar');
-    const cls = type === 'error' ? 'pill-err' : 'pill-warn';
-    bar.innerHTML = `<span class="pill ${cls}">${type}</span><span class="cmd-count">${msg}</span>`;
-  }
-
-  function clearResults() {
-    generatedCommands = [];
-    document.getElementById('intentBox').style.display = 'none';
-    document.getElementById('commandsContainer').innerHTML = '<div class="empty">Generating…</div>';
-    document.getElementById('statusBar').innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Generating…</span>';
-    document.getElementById('errorsList').style.display = 'none';
-    document.getElementById('btnExecute').disabled = true;
-  }
-
-  function setGenLoading(on) {
-    document.getElementById('genSpinner').style.display = on ? 'block' : 'none';
-    document.getElementById('genLabel').textContent = on ? 'Generating…' : 'Generate Commands';
-    document.getElementById('btnGenerate').disabled = on;
-  }
-
   function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = `toast ${type} show`;
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.classList.remove('show'); }, 3500);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3500);
   }
 
   document.getElementById('prompt').addEventListener('keydown', e => {

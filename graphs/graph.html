@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minecraft Builder — Architecture Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    p.sub {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 40px;
+    }
+
+    .graph-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 48px;
+    }
+
+    .graph-card h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* Data flow table */
+    .table-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 32px 40px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .table-card h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-bottom: 1px solid #2a2d3a;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e2130;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .arrow { color: #4ade80; font-weight: 700; }
+    .label { color: #94a3b8; font-size: 0.78rem; }
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .b-llm      { background: rgba(34,197,94,0.15);  color: #22c55e; }
+    .b-python   { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .b-ui       { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .b-ext      { background: rgba(249,115,22,0.15); color: #fb923c; }
+    .b-auto     { background: rgba(168,85,247,0.15); color: #c084fc; }
+  </style>
+</head>
+<body>
+
+<h1>Minecraft Builder — Architecture</h1>
+<p class="sub">How a text prompt becomes blocks in your world</p>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#3b82f6"></div> UI Layer</div>
+  <div class="legend-item"><div class="dot" style="background:#6366f1"></div> Flask Server</div>
+  <div class="legend-item"><div class="dot" style="background:#22c55e"></div> LLM Agent (Groq)</div>
+  <div class="legend-item"><div class="dot" style="background:#f97316"></div> External API</div>
+  <div class="legend-item"><div class="dot" style="background:#eab308"></div> Rule-based (Python)</div>
+  <div class="legend-item"><div class="dot" style="background:#06b6d4"></div> Static Data</div>
+  <div class="legend-item"><div class="dot" style="background:#a855f7"></div> Automation</div>
+  <div class="legend-item"><div class="dot" style="background:#10b981"></div> Minecraft</div>
+</div>
+
+<!-- Main Graph -->
+<div class="graph-card">
+  <h2>Full Pipeline</h2>
+  <div class="mermaid">
+flowchart TD
+    User(["👤 User"])
+    WebUI["🌐 Web UI\n─────────────\nindex.html\nbrowser interface"]
+    Flask["⚙️ Flask Server\n─────────────\napp.py\nroutes + orchestration"]
+    Orch["🧠 Orchestrator\n─────────────\norchestrator.py\nGroq LLM call #1\nprompt → intent JSON"]
+    Groq[("☁️ Groq API\n─────\nexternal\nllama-3.3-70b")]
+    Planner["📐 Planner\n─────────────\nplanner.py\nGroq LLM call #2\nintent → commands list"]
+    Validator{"✅ Validator\n─────────────\nvalidator.py\nblock names · volumes\ncoordinate bounds"}
+    Blocks["📦 blocks.py\n─────────────\n~200 valid\nMinecraft blocks"]
+    Agent["🖱️ Input Agent\n─────────────\ninput_agent.py\npyautogui · pyperclip\nT → paste → Enter"]
+    MC(["🎮 Minecraft\ngame window"])
+
+    User -->|"prompt + coords"| WebUI
+    WebUI -->|"POST /generate"| Flask
+    Flask -->|"prompt"| Orch
+    Orch -->|"LLM call #1"| Groq
+    Groq -->|"intent JSON"| Orch
+    Orch -->|"intent + origin"| Planner
+    Planner -->|"LLM call #2"| Groq
+    Groq -->|"commands list"| Planner
+    Planner -->|"raw commands"| Validator
+    Blocks -->|"valid block set"| Validator
+    Validator -->|"valid · errors"| Flask
+    Flask -->|"preview + validation"| WebUI
+    WebUI -->|"POST /execute\n3-sec countdown"| Flask
+    Flask -->|"validated commands"| Agent
+    Agent -->|"pyautogui paste\n300ms delay each"| MC
+
+    style User     fill:#475569,color:#fff,stroke:#64748b
+    style WebUI    fill:#1d4ed8,color:#fff,stroke:#3b82f6
+    style Flask    fill:#4338ca,color:#fff,stroke:#6366f1
+    style Orch     fill:#15803d,color:#fff,stroke:#22c55e
+    style Groq     fill:#c2410c,color:#fff,stroke:#f97316
+    style Planner  fill:#15803d,color:#fff,stroke:#22c55e
+    style Validator fill:#854d0e,color:#fff,stroke:#eab308
+    style Blocks   fill:#0e7490,color:#fff,stroke:#06b6d4
+    style Agent    fill:#7e22ce,color:#fff,stroke:#a855f7
+    style MC       fill:#065f46,color:#fff,stroke:#10b981
+  </div>
+</div>
+
+<!-- Data Flow Table -->
+<div class="table-card">
+  <h2>Step-by-step Data Flow</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>From → To</th>
+        <th>What travels</th>
+        <th>File</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><span class="arrow">User → Web UI</span></td>
+        <td class="label">Text prompt + X/Y/Z origin coordinates</td>
+        <td class="label">index.html</td>
+        <td><span class="badge b-ui">UI</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><span class="arrow">Web UI → Flask</span></td>
+        <td class="label">POST /generate  { prompt, origin: {x,y,z} }</td>
+        <td class="label">app.py</td>
+        <td><span class="badge b-python">Python</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><span class="arrow">Flask → Orchestrator</span></td>
+        <td class="label">Raw user prompt string</td>
+        <td class="label">orchestrator.py</td>
+        <td><span class="badge b-llm">LLM</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><span class="arrow">Orchestrator ↔ Groq API</span></td>
+        <td class="label">LLM call #1 → returns intent JSON<br><code style="color:#4ade80;font-size:0.75rem">{ structure_type, size, style, materials }</code></td>
+        <td class="label">orchestrator.py</td>
+        <td><span class="badge b-ext">External</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><span class="arrow">Orchestrator → Planner</span></td>
+        <td class="label">Intent JSON + origin coordinates</td>
+        <td class="label">planner.py</td>
+        <td><span class="badge b-llm">LLM</span></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><span class="arrow">Planner ↔ Groq API</span></td>
+        <td class="label">LLM call #2 → returns list of /fill and /setblock commands</td>
+        <td class="label">planner.py</td>
+        <td><span class="badge b-ext">External</span></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><span class="arrow">Planner → Validator</span></td>
+        <td class="label">Raw command strings to check</td>
+        <td class="label">validator.py</td>
+        <td><span class="badge b-python">Python</span></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><span class="arrow">blocks.py → Validator</span></td>
+        <td class="label">Set of ~200 valid minecraft:block_name strings</td>
+        <td class="label">blocks.py</td>
+        <td><span class="badge b-python">Python</span></td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><span class="arrow">Validator → Flask</span></td>
+        <td class="label">{ valid: bool, errors: list } — blocks execution if invalid</td>
+        <td class="label">validator.py</td>
+        <td><span class="badge b-python">Python</span></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><span class="arrow">Flask → Web UI</span></td>
+        <td class="label">{ commands[], valid, errors[], intent } — shown as preview</td>
+        <td class="label">app.py</td>
+        <td><span class="badge b-ui">UI</span></td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><span class="arrow">Web UI → Flask</span></td>
+        <td class="label">POST /execute  { commands[] }  — triggered after 3-sec countdown</td>
+        <td class="label">app.py</td>
+        <td><span class="badge b-python">Python</span></td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><span class="arrow">Flask → Input Agent</span></td>
+        <td class="label">Ordered list of /fill and /setblock strings</td>
+        <td class="label">input_agent.py</td>
+        <td><span class="badge b-auto">Auto</span></td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td><span class="arrow">Input Agent → Minecraft</span></td>
+        <td class="label">Press T → paste via clipboard → Enter → wait 400ms → repeat</td>
+        <td class="label">input_agent.py</td>
+        <td><span class="badge b-auto">Auto</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 50,
+      rankSpacing: 60,
+    },
+    themeVariables: {
+      background: '#1a1d27',
+      mainBkg: '#1a1d27',
+      nodeBorder: '#2a2d3a',
+      clusterBkg: '#1a1d27',
+      titleColor: '#e2e8f0',
+      edgeLabelBackground: '#1a1d27',
+      lineColor: '#4ade80',
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+flask
+groq
+pyautogui
+pyperclip
+python-dotenv

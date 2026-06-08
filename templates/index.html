@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Builder</title>
+  <style>
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --border:   #2a2d3a;
+      --accent:   #4ade80;
+      --accent2:  #22d3ee;
+      --danger:   #f87171;
+      --warn:     #fbbf24;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --radius:   8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header .badge {
+      background: var(--accent);
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 0;
+      flex: 1;
+      height: calc(100vh - 65px);
+    }
+
+    /* Left panel */
+    .panel-left {
+      border-right: 1px solid var(--border);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 12px 14px;
+      resize: vertical;
+      min-height: 120px;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .coords-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .coord-field label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    .coord-field input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Consolas', monospace;
+      font-size: 0.95rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .coord-field input:focus {
+      border-color: var(--accent2);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      width: 100%;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-generate {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-execute {
+      background: var(--accent2);
+      color: #000;
+    }
+
+    .btn-execute:disabled {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .intent-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .intent-box .kv {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .intent-box .k {
+      color: var(--muted);
+      min-width: 80px;
+    }
+
+    .intent-box .v {
+      color: var(--accent);
+      font-family: 'Consolas', monospace;
+    }
+
+    /* Right panel */
+    .panel-right {
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 32px;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .pill-ok   { background: rgba(74,222,128,0.15); color: var(--accent); border: 1px solid rgba(74,222,128,0.3); }
+    .pill-err  { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+    .pill-warn { background: rgba(251,191,36,0.15);  color: var(--warn);   border: 1px solid rgba(251,191,36,0.3); }
+
+    .cmd-count {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .errors-list {
+      background: rgba(248,113,113,0.07);
+      border: 1px solid rgba(248,113,113,0.25);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      line-height: 1.7;
+      display: none;
+    }
+
+    .commands-container {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    .commands-container .empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .cmd-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    .cmd-row:last-child { border-bottom: none; }
+    .cmd-row:hover { background: rgba(255,255,255,0.03); }
+
+    .cmd-num {
+      color: var(--muted);
+      font-size: 0.7rem;
+      min-width: 28px;
+      text-align: right;
+      user-select: none;
+    }
+
+    .cmd-text { color: var(--text); word-break: break-all; }
+
+    .cmd-text .kw-fill    { color: var(--accent2); font-weight: 600; }
+    .cmd-text .kw-setblock { color: var(--warn);   font-weight: 600; }
+    .cmd-text .kw-block   { color: var(--accent); }
+
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 100;
+      display: none;
+    }
+
+    .countdown-number {
+      font-size: 6rem;
+      font-weight: 900;
+      color: var(--accent2);
+      line-height: 1;
+    }
+
+    .countdown-msg {
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-size: 0.88rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 200;
+      max-width: 320px;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(74,222,128,0.4); }
+    .toast.error   { border-color: rgba(248,113,113,0.4); }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="9" height="9" rx="1" fill="#4ade80"/>
+    <rect x="13" y="2" width="9" height="9" rx="1" fill="#22d3ee"/>
+    <rect x="2" y="13" width="9" height="9" rx="1" fill="#22d3ee"/>
+    <rect x="13" y="13" width="9" height="9" rx="1" fill="#4ade80"/>
+  </svg>
+  <h1>Minecraft Builder</h1>
+  <span class="badge">v0</span>
+</header>
+
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <div>
+      <div class="section-label">Build Prompt</div>
+      <textarea id="prompt" placeholder="e.g. Build a large industrial warehouse with gray concrete walls and a flat iron roof"></textarea>
+    </div>
+
+    <div>
+      <div class="section-label">Origin Coordinates</div>
+      <div class="coords-grid">
+        <div class="coord-field">
+          <label>X</label>
+          <input type="number" id="ox" value="0" />
+        </div>
+        <div class="coord-field">
+          <label>Y</label>
+          <input type="number" id="oy" value="64" />
+        </div>
+        <div class="coord-field">
+          <label>Z</label>
+          <input type="number" id="oz" value="0" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-generate" id="btnGenerate" onclick="generate()">
+      <div class="spinner" id="genSpinner"></div>
+      <span id="genLabel">Generate Commands</span>
+    </button>
+
+    <div class="intent-box" id="intentBox"></div>
+
+    <button class="btn btn-execute" id="btnExecute" disabled onclick="startCountdown()">
+      Execute in Minecraft
+    </button>
+
+    <div style="color: var(--muted); font-size: 0.75rem; line-height: 1.5;">
+      Switch to Minecraft <em>before</em> clicking Execute. A 3-second countdown gives you time to focus the window.
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <div class="status-bar" id="statusBar">
+      <span style="color: var(--muted); font-size: 0.85rem;">Generate commands to see them here.</span>
+    </div>
+
+    <div class="errors-list" id="errorsList"></div>
+
+    <div class="commands-container" id="commandsContainer">
+      <div class="empty">No commands yet</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- COUNTDOWN OVERLAY -->
+<div class="countdown-overlay" id="countdownOverlay">
+  <div class="countdown-msg">Switch to Minecraft now!</div>
+  <div class="countdown-number" id="countdownNum">3</div>
+  <div class="countdown-msg" style="color: var(--muted)">Execution starts automatically</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let generatedCommands = [];
+
+  async function generate() {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { showToast('Enter a build prompt first.', 'error'); return; }
+
+    const origin = {
+      x: parseInt(document.getElementById('ox').value) || 0,
+      y: parseInt(document.getElementById('oy').value) || 64,
+      z: parseInt(document.getElementById('oz').value) || 0,
+    };
+
+    setGenLoading(true);
+    clearResults();
+
+    try {
+      const res = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, origin }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        showStatus('error', data.error);
+        showToast(data.error, 'error');
+        return;
+      }
+
+      generatedCommands = data.commands;
+      renderIntent(data.intent);
+      renderCommands(data.commands);
+      renderValidation(data.valid, data.errors);
+
+      if (data.valid) {
+        document.getElementById('btnExecute').disabled = false;
+      }
+    } catch (e) {
+      showStatus('error', 'Network error: ' + e.message);
+      showToast('Network error', 'error');
+    } finally {
+      setGenLoading(false);
+    }
+  }
+
+  function startCountdown() {
+    if (generatedCommands.length === 0) return;
+    const overlay = document.getElementById('countdownOverlay');
+    const num = document.getElementById('countdownNum');
+    overlay.style.display = 'flex';
+    let count = 3;
+    num.textContent = count;
+    const iv = setInterval(() => {
+      count--;
+      if (count === 0) {
+        clearInterval(iv);
+        overlay.style.display = 'none';
+        runExecute();
+      } else {
+        num.textContent = count;
+      }
+    }, 1000);
+  }
+
+  async function runExecute() {
+    document.getElementById('btnExecute').disabled = true;
+    try {
+      const res = await fetch('/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commands: generatedCommands }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast('Execution error: ' + data.error, 'error');
+        document.getElementById('btnExecute').disabled = false;
+      } else {
+        showToast(`Done! Sent ${data.count} command${data.count !== 1 ? 's' : ''}.`, 'success');
+      }
+    } catch (e) {
+      showToast('Network error during execution', 'error');
+      document.getElementById('btnExecute').disabled = false;
+    }
+  }
+
+  function renderIntent(intent) {
+    const box = document.getElementById('intentBox');
+    if (!intent) { box.style.display = 'none'; return; }
+
+    const s = intent.size || {};
+    const m = intent.materials || {};
+    box.innerHTML = `
+      <div class="kv"><span class="k">Type</span><span class="v">${intent.structure_type || '—'}</span></div>
+      <div class="kv"><span class="k">Size</span><span class="v">${s.x || '?'} × ${s.y || '?'} × ${s.z || '?'}</span></div>
+      <div class="kv"><span class="k">Style</span><span class="v">${intent.style || '—'}</span></div>
+      <div class="kv"><span class="k">Walls</span><span class="v">${m.walls || '—'}</span></div>
+      <div class="kv"><span class="k">Floor</span><span class="v">${m.floor || '—'}</span></div>
+      <div class="kv"><span class="k">Roof</span><span class="v">${m.roof || '—'}</span></div>
+    `;
+    box.style.display = 'block';
+  }
+
+  function renderCommands(commands) {
+    const container = document.getElementById('commandsContainer');
+    if (!commands || commands.length === 0) {
+      container.innerHTML = '<div class="empty">No commands generated</div>';
+      return;
+    }
+    container.innerHTML = commands.map((cmd, i) => {
+      return `<div class="cmd-row">
+        <span class="cmd-num">${i + 1}</span>
+        <span class="cmd-text">${highlight(cmd)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function highlight(cmd) {
+    return cmd
+      .replace(/^\/fill/, '<span class="kw-fill">/fill</span>')
+      .replace(/^\/setblock/, '<span class="kw-setblock">/setblock</span>')
+      .replace(/(minecraft:\w+)/g, '<span class="kw-block">$1</span>');
+  }
+
+  function renderValidation(valid, errors) {
+    const statusBar = document.getElementById('statusBar');
+    const errorsList = document.getElementById('errorsList');
+    const count = generatedCommands.length;
+
+    if (valid) {
+      statusBar.innerHTML = `
+        <span class="pill pill-ok">Valid</span>
+        <span class="cmd-count">${count} command${count !== 1 ? 's' : ''} ready to execute</span>
+      `;
+      errorsList.style.display = 'none';
+    } else {
+      statusBar.innerHTML = `
+        <span class="pill pill-err">Invalid</span>
+        <span class="cmd-count">${errors.length} error${errors.length !== 1 ? 's' : ''} — fix before executing</span>
+      `;
+      errorsList.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+      errorsList.style.display = 'block';
+    }
+  }
+
+  function showStatus(type, msg) {
+    const bar = document.getElementById('statusBar');
+    const cls = type === 'error' ? 'pill-err' : 'pill-warn';
+    bar.innerHTML = `<span class="pill ${cls}">${type}</span><span class="cmd-count">${msg}</span>`;
+  }
+
+  function clearResults() {
+    generatedCommands = [];
+    document.getElementById('intentBox').style.display = 'none';
+    document.getElementById('commandsContainer').innerHTML = '<div class="empty">Generating…</div>';
+    document.getElementById('statusBar').innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Generating…</span>';
+    document.getElementById('errorsList').style.display = 'none';
+    document.getElementById('btnExecute').disabled = true;
+  }
+
+  function setGenLoading(on) {
+    document.getElementById('genSpinner').style.display = on ? 'block' : 'none';
+    document.getElementById('genLabel').textContent = on ? 'Generating…' : 'Generate Commands';
+    document.getElementById('btnGenerate').disabled = on;
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.classList.remove('show'); }, 3500);
+  }
+
+  document.getElementById('prompt').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
+  });
+</script>
+
+</body>
+</html>

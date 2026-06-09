@@ -3,6 +3,34 @@
 Running log of every spec ambiguity resolved during the v2 upgrade
 (per IMPLEMENTATION_SPEC §0.4). Newest first.
 
+## Phase D — DSL + placers + deterministic critic
+
+- **DoD-D / G2 result (dsl, `--no-llm`).** Mean quality **95.4/100** (baseline
+  72.9), 15/15 valid, ~310 tokens/build (≤5500 budget). `light_coverage` →~100
+  via `auto_light`, furniture in band, fireplace feature detected. dsl beats
+  legacy on **15/15** prompts → G2 gate (≥13/15) satisfied.
+- **auto_light = greedy set-cover over a BFS light field.** Ceiling-hung lanterns
+  (supported by the roof slab) so they never block the 2-high walk clearance; in
+  tall halls a supported bracket+lantern drops within ~6 of the floor so the floor
+  still reaches ≥8.
+- **The LLM never writes a coordinate or block id.** `dsl_interior.parse_ops`
+  keeps only known op NAMES (fuzzy-matched to the room menu) and discards any
+  coords/block ids the model emits — verified by a guard test feeding malicious
+  JSON. Parse failure → kit defaults, so a build never breaks.
+- **Furnishing preserves walkability.** Placers run along walls and claim
+  occupancy; the walkability metric measures reachability over the *remaining* air
+  floor, so wall-hugging furniture doesn't count against it. A few large rooms with
+  centre dining sets sit ~92–93 (a couple of pinched cells) — the spec's
+  "remove-blocker" walkability repair is noted as a refinement, not yet added.
+- **Scope delivered vs deferred in Phase D.** Delivered: `placers/base.py`,
+  `placers/lighting.py` (auto_light + road_lighting), `placers/furniture.py` (full
+  furniture kit), deterministic `critic.py` (furnish + auto_light + feature patch),
+  and the **interior** DSL agent (`agents/dsl_interior.py`). Deferred:
+  `placers/exterior_ops.py` (facade ops) and the **exterior** DSL agent — the
+  facade op placers are a large additional surface; the interior agent already
+  proves the menu-pick→placer thesis end-to-end. Live 8b-vs-70b A/B needs a
+  GROQ_API_KEY (manual run); the offline kit/StubLLM path is fully tested.
+
 ## Phase C — Shell 2.0
 
 - **DoD-C result (dsl kit mode, `--no-llm`).** 15/15 valid, mean quality

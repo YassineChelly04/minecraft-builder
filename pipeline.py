@@ -136,9 +136,24 @@ def _build_dsl(prompt: str, origin: dict, answers: dict | None,
     except Exception as e:  # noqa: BLE001
         raise PipelineError(f"Orchestrator failed: {e}")
 
-    building = intent_to_brief(intent, origin, prompt=prompt, detail_level="kit")
+    detail = "llm" if refine else "kit"
+    building = intent_to_brief(intent, origin, prompt=prompt, detail_level=detail)
     raw, geometry = build_shell2(building)
-    commands, report = _clean_ordered(raw)
+
+    # Interior ops: LLM picks op names from a menu (detail=llm), else kit defaults.
+    ops_by_zone = None
+    if detail == "llm":
+        from agents.dsl_interior import get_interior_ops
+        ops_by_zone = get_interior_ops(geometry, building)
+
+    # Furnish, then patch deterministically: auto_light guarantees light ≥ 8, and
+    # requested features get a placer-built presence.
+    from critic import furnish_building, critic_patch
+    furn, furn_report = furnish_building(geometry, building, ops_by_zone)
+    patch, patch_report = critic_patch(raw + furn, geometry, building)
+
+    commands, report = _clean_ordered(raw + furn + patch)
+    report += furn_report + patch_report
     if not commands:
         raise PipelineError("Build produced no commands")
 

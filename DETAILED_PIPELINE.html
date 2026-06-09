@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Build Pipeline with Models & Files</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .pipeline-stage {
+            background: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .pipeline-stage.llm {
+            border-left: 6px solid #ff6b6b;
+        }
+        .pipeline-stage.deterministic {
+            border-left: 6px solid #4ecdc4;
+        }
+        .pipeline-stage.web {
+            border-left: 6px solid #c7b3e5;
+        }
+        .stage-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        .stage-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+            flex: 1;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge.llm {
+            background: #ff6b6b;
+            color: white;
+        }
+        .badge.deterministic {
+            background: #4ecdc4;
+            color: #16213e;
+        }
+        .badge.web {
+            background: #c7b3e5;
+            color: #16213e;
+        }
+        .section {
+            margin-bottom: 15px;
+        }
+        .section-title {
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .file-box {
+            background: #0f2539;
+            padding: 10px;
+            border-left: 3px solid #00ff88;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .file-name {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        .model-box {
+            background: #2d1b4e;
+            padding: 10px;
+            border-left: 3px solid #ff6b6b;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .model-label {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        .system-prompt {
+            background: #1a2332;
+            padding: 12px;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 11px;
+            color: #bbb;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .data-flow {
+            background: #0f2539;
+            padding: 10px;
+            border-left: 3px solid #ffe66d;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 20px;
+            color: #00d4ff;
+            margin: 10px 0;
+        }
+        .config-point {
+            background: #2d3b52;
+            padding: 10px;
+            border-left: 3px solid #00d4ff;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .config-label {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        .upgrade-guide {
+            background: #1a3a2e;
+            padding: 12px;
+            border-left: 4px solid #00ff88;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #a0ffa0;
+        }
+        .parallel-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #0f3460;
+        }
+        th {
+            background: #0f3460;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        tr:hover {
+            background: #0f3460;
+        }
+        .code-snippet {
+            background: #0a1a2e;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 8px 0;
+            overflow-x: auto;
+            font-size: 11px;
+            color: #00ff88;
+        }
+        .note {
+            background: #2d3b4e;
+            border-left: 4px solid #ffe66d;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+        .hierarchy {
+            background: #0f2539;
+            padding: 15px;
+            border-left: 3px solid #00d4ff;
+            margin: 15px 0;
+            font-size: 12px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Detailed Pipeline: Files, Models & Upgrade Paths</h1>
+
+        <!-- STAGE 1: WEB LAYER -->
+        <div class="pipeline-stage web">
+            <div class="stage-header">
+                <div class="stage-title">1️⃣ WEB LAYER & ROUTING</div>
+                <span class="badge web">Web Interface</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 Files</div>
+                <div class="file-box">
+                    <span class="file-name">app.py</span> — Flask server, routes: /clarify, /generate, /execute
+                </div>
+                <div class="file-box">
+                    <span class="file-name">templates/index.html</span> — React UI for brainstorm → answers → execute
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔄 Request Flow</div>
+                <div class="data-flow">
+                    POST /clarify → <span style="color: #00ff88;">get_clarification()</span><br>
+                    POST /generate → <span style="color: #00ff88;">build_structure(prompt, origin, answers, brief, refine)</span><br>
+                    POST /execute → <span style="color: #00ff88;">execute_commands(commands)</span>
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 2: CLARIFY AGENT -->
+        <div class="pipeline-stage llm">
+            <div class="stage-header">
+                <div class="stage-title">2️⃣ CLARIFY AGENT (Optional Brainstorm)</div>
+                <span class="badge llm">LLM Agent</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 File</div>
+                <div class="file-box">
+                    <span class="file-name">clarify_agent.py</span> — Brainstorm + ask 2-4 clarifying questions
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🧠 Model & Knowledge</div>
+                <div class="model-box">
+                    <span class="model-label">Model:</span> <code>LLM_MODEL_CLARIFY</code> or <code>DEFAULT_MODEL</code><br>
+                    <span style="color: #bbb;">Default:</span> <code>llama-3.1-8b-instant</code> (small, fast)<br>
+                    <span style="color: #bbb;">Temperature:</span> 0.6 (creative brainstorm)
+                </div>
+
+                <div class="system-prompt">
+<strong>System Prompt:</strong><br>
+"You are the lead architect's intake assistant.<br>
+Brainstorm the build (mood, style, pro touches).<br>
+Ask 2-4 clarifying questions about: scale, style, setting, rooms, features.<br>
+Output JSON with: brainstorm, assumptions, questions."
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📤 Output</div>
+                <div class="data-flow">
+                    {<br>
+                    &nbsp;&nbsp;"brainstorm": "2-4 sentences of design direction",<br>
+                    &nbsp;&nbsp;"assumptions": ["defaults if user doesn't answer"],<br>
+                    &nbsp;&nbsp;"questions": [<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;{"id": "...", "question": "...", "options": [...]}
+                    &nbsp;&nbsp;]<br>
+                    }
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔧 How to Upgrade</div>
+                <div class="upgrade-guide">
+                    • Change system prompt to ask different questions<br>
+                    • Override model: <code>LLM_MODEL_CLARIFY=claude-3-sonnet</code><br>
+                    • Raise temperature for more creative brainstorm
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 3: ORCHESTRATOR -->
+        <div class="pipeline-stage llm">
+            <div class="stage-header">
+                <div class="stage-title">3️⃣ ORCHESTRATOR (Extract Intent)</div>
+                <span class="badge llm">LLM Agent</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 File</div>
+                <div class="file-box">
+                    <span class="file-name">orchestrator.py::get_intent()</span> — Parse prompt + answers → structured intent
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🧠 Model & Knowledge</div>
+                <div class="model-box">
+                    <span class="model-label">Model:</span> <code>LLM_MODEL_INTENT</code> or <code>DEFAULT_MODEL</code><br>
+                    <span style="color: #bbb;">Default:</span> <code>llama-3.1-8b-instant</code><br>
+                    <span style="color: #bbb;">Temperature:</span> 0.3 (deterministic JSON extraction)
+                </div>
+
+                <div class="system-prompt">
+<strong>System Prompt:</strong><br>
+"Extract structured intent as JSON with schema:<br>
+{structure_type, size{x,y,z}, style, materials{walls,floor,roof,accent},<br>
+features[], notes}<br>
+Rules: valid Minecraft blocks, max 50 blocks/dim, minecraft: prefix"
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📤 Output</div>
+                <div class="data-flow">
+                    {<br>
+                    &nbsp;&nbsp;"structure_type": "house|warehouse|tower|...",<br>
+                    &nbsp;&nbsp;"size": {"x": 10, "y": 6, "z": 10},<br>
+                    &nbsp;&nbsp;"style": "modern|medieval|industrial|fantasy|...",<br>
+                    &nbsp;&nbsp;"materials": {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"walls": "minecraft:stone_bricks",<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"floor": "minecraft:oak_planks",<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"roof": "minecraft:dark_oak_planks"<br>
+                    &nbsp;&nbsp;},<br>
+                    &nbsp;&nbsp;"features": ["special elements"],<br>
+                    &nbsp;&nbsp;"notes": "design direction for build agents"<br>
+                    }
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 4: DETERMINISTIC SHELL -->
+        <div class="pipeline-stage deterministic">
+            <div class="stage-header">
+                <div class="stage-title">4️⃣ DETERMINISTIC SHELL (Envelope)</div>
+                <span class="badge deterministic">Python Logic</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 Files</div>
+                <div class="file-box">
+                    <span class="file-name">shell.py::build_shell()</span> — Generate floor + 4 walls + roof + door + windows
+                </div>
+                <div class="file-box">
+                    <span class="file-name">blocks.py::VALID_BLOCKS</span> — Curated set of valid Minecraft blocks (1.21.x)
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔍 Core Logic</div>
+                <div class="code-snippet">
+1. Extract origin (x,y,z) and size (sx,sy,sz) from intent
+2. Generate floor at y
+3. Generate 4 walls from y+1 to y+sy-1 (using intent["materials"]["walls"])
+4. Generate roof at y+sy (flat or pitched based on style)
+5. Cut door opening (1×2) in north wall
+6. Cut window openings (1×1) in each wall
+7. Fill interior air (y+1 to y+sy-1)
+8. Return commands as list[str]
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">✅ Guarantees</div>
+                <div class="upgrade-guide">
+                    ✓ Always generates a complete, watertight envelope<br>
+                    ✓ All blocks valid (checked against VALID_BLOCKS)<br>
+                    ✓ Always has floor, roof, door, windows<br>
+                    ✓ Respects user's material choices (with fallbacks)<br>
+                    ✓ Never hallucinates block names
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 5: PARALLEL AGENTS -->
+        <div class="pipeline-stage llm">
+            <div class="stage-header">
+                <div class="stage-title">5️⃣ PARALLEL BUILD AGENTS (Decorate + Furnish)</div>
+                <span class="badge llm">LLM Agents (Parallel)</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">⚙️ Execution</div>
+                <div class="data-flow">
+                    ThreadPoolExecutor(max_workers=2) runs:<br>
+                    &nbsp;&nbsp;Agent 1: Exterior (facade detail)<br>
+                    &nbsp;&nbsp;Agent 2: Interior (furniture)<br>
+                    Both complete before merge step.
+                </div>
+            </div>
+
+            <div class="parallel-box">
+                <!-- EXTERIOR AGENT -->
+                <div class="pipeline-stage llm" style="border-left: 6px solid #ff6b6b; margin: 0;">
+                    <div class="section-title">EXTERIOR AGENT</div>
+                    <div class="file-box">
+                        <span class="file-name">exterior_agent.py::get_exterior_commands()</span><br>
+                        Role: DECORATE facade only (not structural)
+                    </div>
+                    <div class="model-box">
+                        <span class="model-label">Model:</span> <code>LLM_MODEL_EXTERIOR</code><br>
+                        <span style="color: #bbb;">Default:</span> <code>llama-3.3-70b-versatile</code> (strong spatial)<br>
+                        <span style="color: #bbb;">Temp:</span> 0.2 (low, deterministic)
+                    </div>
+                    <div class="system-prompt">
+"Add decorative facade details: decorative blocks, patterns, trim. NO structural changes. NO air blocks. Output minecraft commands."
+                    </div>
+                    <div class="upgrade-guide">
+                        • Style guide in system prompt<br>
+                        • Can request vines, signs, carpets, etc
+                    </div>
+                </div>
+
+                <!-- INTERIOR AGENT -->
+                <div class="pipeline-stage llm" style="border-left: 6px solid #ff6b6b; margin: 0;">
+                    <div class="section-title">INTERIOR AGENT</div>
+                    <div class="file-box">
+                        <span class="file-name">interior_agent.py::get_interior_commands()</span><br>
+                        Role: FURNISH interior only (furniture, decorations)
+                    </div>
+                    <div class="model-box">
+                        <span class="model-label">Model:</span> <code>LLM_MODEL_INTERIOR</code><br>
+                        <span style="color: #bbb;">Default:</span> <code>llama-3.3-70b-versatile</code> (strong spatial)<br>
+                        <span style="color: #bbb;">Temp:</span> 0.3 (slightly creative)
+                    </div>
+                    <div class="system-prompt">
+"Add interior furniture & decorations: beds, tables, chests, etc. Respect shell boundaries. NO air blocks. Output minecraft commands."
+                    </div>
+                    <div class="upgrade-guide">
+                        • Can request skill modules<br>
+                        • Use anchors (pre-computed safe coords)<br>
+                        • Reference furniture in skills/
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🛡️ Safety: Air Block Stripping</div>
+                <div class="code-snippet">
+_strip_air(commands) filters out any minecraft:air blocks
+from LLM output. This guarantees LLMs cannot punch holes
+in the watertight shell, even if they try.
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 6: NORMALIZE & REPAIR -->
+        <div class="pipeline-stage deterministic">
+            <div class="stage-header">
+                <div class="stage-title">6️⃣ NORMALIZE → REPAIR (Deterministic Cleaning)</div>
+                <span class="badge deterministic">Python Logic</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 Files</div>
+                <div class="file-box">
+                    <span class="file-name">normalizer.py::normalize_commands()</span> — Fix block names, strip invalid states
+                </div>
+                <div class="file-box">
+                    <span class="file-name">normalizer.py::merge_fills()</span> — Combine adjacent /fill commands
+                </div>
+                <div class="file-box">
+                    <span class="file-name">repair.py::repair_commands()</span> — Split oversized /fill, sanitize syntax
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">⚙️ Pipeline</div>
+                <div class="code-snippet">
+1. normalize_commands(commands)
+   - Fuzzy-match block names (e.g. "oak_plank" → "minecraft:oak_planks")
+   - Strip invalid block states (e.g. "oak_planks[something=bad]" → "oak_planks")
+
+2. merge_fills(commands)
+   - Combine adjacent /fill commands into larger fills (performance)
+
+3. repair_commands(commands)
+   - Split /fill commands > MAX_FILL_VOLUME (32768)
+   - Validate coordinate ranges (WORLD_MIN_Y=-64, MAX_Y=319)
+   - Drop unfixable commands
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">✅ Guarantees</div>
+                <div class="upgrade-guide">
+                    ✓ Every returned command is syntactically valid<br>
+                    ✓ No coordinates outside world bounds<br>
+                    ✓ No /fill exceeds volume limits<br>
+                    ✓ Block names fuzzy-matched to valid ones<br>
+                    ✓ Invalid block states stripped
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 7: OPTIONAL CRITIC -->
+        <div class="pipeline-stage llm">
+            <div class="stage-header">
+                <div class="stage-title">7️⃣ OPTIONAL CRITIC (Review & Suggestions)</div>
+                <span class="badge llm">LLM Agent</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 File</div>
+                <div class="file-box">
+                    <span class="file-name">critic_agent.py::review_build()</span> — Review interior furnishing, suggest additions
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🧠 Model & Knowledge</div>
+                <div class="model-box">
+                    <span class="model-label">Model:</span> <code>LLM_MODEL_CRITIC</code> or <code>DEFAULT_MODEL</code><br>
+                    <span style="color: #bbb;">Default:</span> <code>llama-3.1-8b-instant</code><br>
+                    <span style="color: #bbb;">Temperature:</span> 0.1 (very precise)
+                </div>
+
+                <div class="system-prompt">
+"Review the interior furnishing. Is it complete? Suggest 1-3 additional furniture/decor that would improve the build. Output JSON with: {review, score, additions[]}"
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📊 Input (Pre-computed Safe Anchors)</div>
+                <div class="data-flow">
+                    Critic receives anchors to avoid math:<br>
+                    • interior_center_floor<br>
+                    • interior_corner_floor<br>
+                    • front_door_floor<br>
+                    • ceiling_center<br>
+                    • wall_sconce
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔧 How to Upgrade</div>
+                <div class="upgrade-guide">
+                    • Disable in UI if hitting rate limits<br>
+                    • Tune review criteria in system prompt<br>
+                    • Use stronger model for better suggestions
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- STAGE 8: FINAL VALIDATION -->
+        <div class="pipeline-stage">
+            <div class="stage-header">
+                <div class="stage-title">8️⃣ FINAL VALIDATION</div>
+                <span class="badge deterministic">Verification</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 File</div>
+                <div class="file-box">
+                    <span class="file-name">validator.py::validate_commands()</span> — Syntax & semantic check
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">✅ Checks</div>
+                <div class="upgrade-guide">
+                    ✓ All commands start with / (setblock, fill, etc)<br>
+                    ✓ Coordinates are integers, within bounds<br>
+                    ✓ Block names exist in VALID_BLOCKS<br>
+                    ✓ No duplicate commands
+                </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+        </div>
+
+        <!-- RETURN VALUE -->
+        <div class="pipeline-stage web">
+            <div class="stage-header">
+                <div class="stage-title">📦 Return to Web Layer</div>
+                <span class="badge web">API Response</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Response Structure</div>
+                <div class="data-flow">
+                    {<br>
+                    &nbsp;&nbsp;"intent": {...},<br>
+                    &nbsp;&nbsp;"exterior_commands": [...],<br>
+                    &nbsp;&nbsp;"interior_commands": [...],<br>
+                    &nbsp;&nbsp;"commands": [...],  // all combined, valid<br>
+                    &nbsp;&nbsp;"valid": true,<br>
+                    &nbsp;&nbsp;"errors": [],<br>
+                    &nbsp;&nbsp;"repairs": ["log of fixes applied"],<br>
+                    &nbsp;&nbsp;"review": "critic opinion (if enabled)",<br>
+                    &nbsp;&nbsp;"score": 8.5  // quality score<br>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURATION TABLE -->
+        <div class="note">
+            <h3 style="color: #00ff88;">⚙️ ALL CONFIGURATION POINTS (Override via Env Vars)</h3>
+            <table>
+                <tr>
+                    <th>Env Variable</th>
+                    <th>Default</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td><code>GROQ_API_KEY</code></td>
+                    <td>Required</td>
+                    <td>Groq API authentication</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL</code></td>
+                    <td>llama-3.1-8b-instant</td>
+                    <td>Fallback model for all agents</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_INTENT</code></td>
+                    <td>DEFAULT_MODEL</td>
+                    <td>Orchestrator model</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_CLARIFY</code></td>
+                    <td>DEFAULT_MODEL</td>
+                    <td>Clarify agent model</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_BUILD</code></td>
+                    <td>llama-3.3-70b-versatile</td>
+                    <td>Default for exterior + interior agents</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_EXTERIOR</code></td>
+                    <td>LLM_MODEL_BUILD</td>
+                    <td>Exterior agent model</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_INTERIOR</code></td>
+                    <td>LLM_MODEL_BUILD</td>
+                    <td>Interior agent model</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MODEL_CRITIC</code></td>
+                    <td>DEFAULT_MODEL</td>
+                    <td>Critic agent model</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_MAX_RETRIES</code></td>
+                    <td>4</td>
+                    <td>Retry attempts for LLM calls (rate limit resilience)</td>
+                </tr>
+                <tr>
+                    <td><code>LLM_RETRY_DELAY</code></td>
+                    <td>2.0</td>
+                    <td>Base delay (seconds) for exponential backoff</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- SKILL MODULES -->
+        <div class="pipeline-stage">
+            <div class="stage-header">
+                <div class="stage-title">🎯 Skill Modules (Optional Enhancements)</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📄 Files</div>
+                <div class="file-box">
+                    <span class="file-name">skills/exterior_skills.py</span> — Pre-built facade patterns (vines, signs, etc)
+                </div>
+                <div class="file-box">
+                    <span class="file-name">skills/interior_skills.py</span> — Pre-built furniture layouts (bedroom, kitchen, etc)
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔧 How to Extend</div>
+                <div class="upgrade-guide">
+                    1. Create a new skill function in skills/<br>
+                    2. Add it to the agent's context/prompt<br>
+                    3. Agent can reference it in commands<br>
+                    4. System guarantee: skill outputs go through repair anyway
+                </div>
+            </div>
+        </div>
+
+        <!-- TESTING -->
+        <div class="pipeline-stage">
+            <div class="stage-header">
+                <div class="stage-title">🧪 Test & Verify</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Test Commands</div>
+                <div class="code-snippet">
+# Test shell generation
+python test_shell.py
+
+# Test repair/normalization
+python test_repair.py
+                </div>
+            </div>
+        </div>
+
+        <!-- UPGRADE STRATEGY -->
+        <div class="note">
+            <h3 style="color: #ffe66d;">🚀 UPGRADE STRATEGY (Easy → Hard)</h3>
+            <div style="margin-top: 12px;">
+                <strong style="color: #00ff88;">Easy:</strong> Change model via env var<br>
+                <code>LLM_MODEL_BUILD=claude-3-sonnet python app.py</code><br><br>
+
+                <strong style="color: #00ff88;">Medium:</strong> Modify system prompts<br>
+                Edit orchestrator.py, clarify_agent.py, exterior_agent.py, interior_agent.py<br>
+                Then restart app. Repair layer guarantees valid output.<br><br>
+
+                <strong style="color: #00ff88;">Hard:</strong> Extend shell logic<br>
+                Edit shell.py to add new architectural features (basement, balcony, etc)<br>
+                Test with test_shell.py before production.<br><br>
+
+                <strong style="color: #00ff88;">Expert:</strong> Refine repair heuristics<br>
+                Edit repair.py for better block-name fuzzing or command merging<br>
+                This affects all builds; test thoroughly.<br><br>
+
+                <strong style="color: #ffe66d;">⚠️ Never upgrade:</strong> blocks.py valid block set — must match Minecraft 1.21.x exactly
+            </div>
+        </div>
+
+        <!-- ARCHITECTURE HIERARCHY -->
+        <div class="note">
+            <h3 style="color: #00d4ff;">📚 PROJECT FILE HIERARCHY</h3>
+            <div class="hierarchy">
+app.py (Flask server & routes)
+├── clarify_agent.py (brainstorm + questions)
+├── pipeline.py (main conductor)
+│   ├── orchestrator.py (extract intent from prompt)
+│   ├── shell.py (deterministic envelope)
+│   │   └── blocks.py (valid blocks database)
+│   ├── exterior_agent.py (parallel: facade detail)
+│   │   └── skills/exterior_skills.py
+│   ├── interior_agent.py (parallel: furniture)
+│   │   └── skills/interior_skills.py
+│   ├── normalizer.py (fix block names, merge fills)
+│   ├── repair.py (split oversized, validate syntax)
+│   └── critic_agent.py (optional: review furnishing)
+├── validator.py (final syntax check)
+├── input_agent.py (execute in-game)
+├── llm_client.py (Groq API wrapper + retries)
+├── config.py (central config, env var overrides)
+└── templates/
+    └── index.html (React UI)
+
+Test files:
+├── test_shell.py
+└── test_repair.py
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

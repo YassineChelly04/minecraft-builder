@@ -1,52 +1,32 @@
 import re
 import json
-from llm_client import get_client, get_model
+from llm_client import complete
 from skills.exterior_skills import EXTERIOR_SKILLS
 
 SYSTEM_PROMPT = f"""\
-You are a professional Minecraft architect. You generate exterior /fill and /setblock commands only.
+You are a professional Minecraft facade detailer. A COMPLETE, watertight building shell
+(foundation, floor, four walls, roof, a front door, and windows) has ALREADY been built
+for you. Your job is to make its exterior look designed and expensive — nothing structural.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-YOUR SCOPE — generate ONLY these:
-  ✓ Foundation (1-2 block step wider than walls, heavier material)
-  ✓ Outer walls — 1 BLOCK THICK SHELL ONLY — do NOT fill interior
-  ✓ Roof structure
-  ✓ Window openings (use minecraft:air to cut holes: 2W×3H standard)
-  ✓ Door openings (use minecraft:air: 2W×3H minimum, leave at least 1 door on front wall)
-  ✓ Exterior pillars, cornices, overhangs, ledges (facade depth)
-  ✓ Entry path (3-wide stone/gravel from front door outward)
-  ✓ Exterior lighting (lantern or sea_lantern on pillars, embedded in path)
+ADD ONLY decorative facade depth (all on or just outside the existing walls):
+  ✓ Corner pillars / quoins (a column of accent block up each corner)
+  ✓ A cornice line — a slab or upside-down stair row just under the roof
+  ✓ Window sills (slab under windows) and lintels (stair above windows)
+  ✓ Lanterns flanking the front door and along the facade
+  ✓ A 3-wide entry path of stone/gravel leading out from the front door
+  ✓ Planters, benches, small garden details beside the entrance
 
-  ✗ Do NOT fill the building interior — it will be handled separately
-  ✗ Do NOT place floor inside — exterior walls only
-  ✗ Do NOT place furniture
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HOLLOW WALL RULE — CRITICAL:
-  Build walls as a HOLLOW BOX:
-    Step 1: /fill x1 y1 z1 x2 y2 z2 block          ← full solid box
-    Step 2: /fill (x1+1) y1 (z1+1) (x2-1) y2 (z2-1) minecraft:air  ← carve out interior
-
-  OR build each face as a flat plane (1 block thick):
-    North wall: /fill x1 y1 z1  x2 y2 z1  block
-    South wall: /fill x1 y1 z2  x2 y2 z2  block
-    West wall:  /fill x1 y1 z1  x1 y2 z2  block
-    East wall:  /fill x2 y1 z1  x2 y2 z2  block
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COMMAND EFFICIENCY RULE:
-  Use the MINIMUM number of commands. ONE large /fill beats 10 small ones.
-  Think in volumes: floor row → one fill. Wall face → one fill.
-  Only use /setblock for individual decorative blocks (lanterns, corners).
+✗ Do NOT place minecraft:air anywhere. Do NOT carve, cut, or hollow anything.
+✗ Do NOT build walls, roof, floor, or foundation — they already exist.
+✗ Do NOT cover the windows.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRICT OUTPUT RULES:
-  - Output ONLY commands, one per line. Zero explanations, zero comments.
-  - All coordinates are absolute integers — no ~ or ^.
-  - /fill:     /fill x1 y1 z1 x2 y2 z2 minecraft:block_name
-  - /setblock: /setblock x y z minecraft:block_name
-  - Max 32768 blocks per /fill (split if larger).
-  - Build order: foundation → walls (hollow) → roof → cut windows/doors → details → lighting → path
+  - Output ONLY commands, one per line. Zero explanations.
+  - Absolute integer coordinates. No ~ or ^.
+  - /fill x1 y1 z1 x2 y2 z2 minecraft:block   ·   /setblock x y z minecraft:block
+  - Prefer /setblock and small /fill for detail. Keep it tasteful, ~15-30 commands.
 
 REFERENCE SKILLS (safe blocks + design principles):
 {EXTERIOR_SKILLS}\
@@ -59,32 +39,21 @@ def get_exterior_commands(intent: dict, origin: dict) -> list[str]:
     sy = intent.get("size", {}).get("y", 6)
     sz = intent.get("size", {}).get("z", 10)
 
+    x2, z2 = x + sx - 1, z + sz - 1
+    wall_lo, wall_hi = y + 1, y + sy - 1
+    door_x = (x + x2) // 2
+
     user_msg = (
         f"Build intent:\n{json.dumps(intent, indent=2)}\n\n"
-        f"Origin corner: x={x}, y={y}, z={z}\n"
-        f"Building footprint: {sx} wide (X) × {sy} tall (Y) × {sz} deep (Z)\n"
-        f"Wall corners: ({x},{y},{z}) to ({x+sx-1},{y+sy-1},{z+sz-1})\n\n"
-        "Generate exterior commands.\n"
-        "MANDATORY:\n"
-        "- Walls must be HOLLOW (1 block thick shell — carve interior with air)\n"
-        "- Cut at least 1 door opening (2W×3H air) on the front wall\n"
-        "- Cut window openings on each visible wall\n"
-        "- Use ONE /fill per large area — do not repeat row by row\n"
-        "- Add facade depth (pillars, cornices, ledges)\n"
-        "- Add exterior lighting and entry path"
+        f"The shell already exists. Footprint corners: ({x},{z}) to ({x2},{z2}).\n"
+        f"Wall courses run Y={wall_lo} (bottom) to Y={wall_hi} (top under the roof).\n"
+        f"Front (north) wall is at Z={z}. The door is at X={door_x}, Z={z}, floor Y={wall_lo}.\n"
+        f"Roof sits at Y={y+sy}.\n\n"
+        "Add tasteful exterior DETAIL only (pillars, cornice, window sills/lintels, "
+        "door lanterns, entry path, small garden). No air, no walls, no roof, no carving."
     )
 
-    client = get_client()
-    response = client.chat.completions.create(
-        model=get_model(),
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.2,
-    )
-
-    raw = response.choices[0].message.content
+    raw = complete("exterior", SYSTEM_PROMPT, user_msg)
     return _extract_commands(raw)
 
 

@@ -3,538 +3,628 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Builder</title>
+  <title>Builder Studio — AI Minecraft Architect</title>
   <style>
     :root {
-      --bg:       #0f1117;
-      --surface:  #1a1d27;
-      --border:   #2a2d3a;
-      --accent:   #4ade80;
-      --accent2:  #22d3ee;
-      --danger:   #f87171;
-      --warn:     #fbbf24;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --radius:   8px;
-      --ext:      #f97316;
-      --int:      #a855f7;
+      --bg:        #0b0d12;
+      --bg-2:      #0f121a;
+      --surface:   #151926;
+      --surface-2: #1b2030;
+      --border:    #262c3d;
+      --border-2:  #313850;
+      --text:      #e7ecf3;
+      --muted:     #8b95ab;
+      --faint:     #5b6478;
+      --accent:    #4ade80;
+      --accent-d:  #22c55e;
+      --cyan:      #38bdf8;
+      --danger:    #fb7185;
+      --warn:      #fbbf24;
+      --ext:       #fb923c;
+      --int:       #c084fc;
+      --r-sm: 6px; --r: 10px; --r-lg: 14px;
+      --shadow: 0 10px 40px -12px rgba(0,0,0,0.6);
+      --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', 'Consolas', 'SF Mono', monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
 
     body {
-      background: var(--bg);
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(74,222,128,0.06), transparent 60%),
+        radial-gradient(900px 500px at 0% 110%, rgba(56,189,248,0.05), transparent 55%),
+        var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
     }
 
+    /* ── Header ─────────────────────────────────────────────── */
     header {
-      padding: 18px 32px;
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 26px;
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      background: rgba(11,13,18,0.7); backdrop-filter: blur(8px);
+      flex-shrink: 0;
     }
-
-    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
-
-    .badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+    .logo { display: flex; align-items: center; gap: 11px; }
+    .logo h1 { font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em; }
+    .logo .sub { font-size: 0.7rem; color: var(--faint); font-weight: 500; margin-top: 1px; }
+    .grow { flex: 1; }
+    .agent-chips { display: flex; gap: 7px; }
+    .chip {
+      font-size: 0.66rem; font-weight: 600; padding: 4px 10px;
+      border-radius: 999px; letter-spacing: 0.03em;
+      border: 1px solid transparent; display: flex; align-items: center; gap: 6px;
     }
-    .badge-v  { background: var(--accent); color: #000; }
-    .badge-ext { background: rgba(249,115,22,0.2); color: var(--ext); border: 1px solid rgba(249,115,22,0.35); }
-    .badge-int { background: rgba(168,85,247,0.2); color: var(--int); border: 1px solid rgba(168,85,247,0.35); }
+    .chip .d { width: 6px; height: 6px; border-radius: 50%; }
+    .chip-ext { color: var(--ext); background: rgba(251,146,60,0.10); border-color: rgba(251,146,60,0.25); }
+    .chip-int { color: var(--int); background: rgba(192,132,252,0.10); border-color: rgba(192,132,252,0.25); }
+    .chip-ext .d { background: var(--ext); } .chip-int .d { background: var(--int); }
+    .ver { font-size: 0.62rem; font-weight: 700; color: #04110a; background: var(--accent);
+           padding: 3px 8px; border-radius: 999px; letter-spacing: 0.05em; }
 
-    .main {
-      display: grid;
-      grid-template-columns: 400px 1fr;
-      flex: 1;
-      height: calc(100vh - 61px);
-      overflow: hidden;
-    }
+    /* ── Layout ─────────────────────────────────────────────── */
+    .main { display: grid; grid-template-columns: 420px 1fr; flex: 1; overflow: hidden; }
 
-    .panel-left {
+    .left {
       border-right: 1px solid var(--border);
-      padding: 24px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      overflow-y: auto;
+      padding: 22px; display: flex; flex-direction: column; gap: 18px;
+      overflow-y: auto; background: linear-gradient(180deg, var(--bg-2), var(--bg));
     }
+    .right { display: flex; flex-direction: column; overflow: hidden; }
 
-    .section-label {
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 7px;
+    /* ── Stepper ────────────────────────────────────────────── */
+    .stepper { display: flex; align-items: center; gap: 0; }
+    .step { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .step .num {
+      width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700;
+      background: var(--surface); border: 1px solid var(--border-2); color: var(--faint);
+      transition: all 0.25s;
     }
+    .step .lbl { font-size: 0.72rem; font-weight: 600; color: var(--faint); transition: color 0.25s; white-space: nowrap; }
+    .step .bar { flex: 1; height: 1px; background: var(--border-2); margin: 0 8px; }
+    .step.done .num { background: rgba(74,222,128,0.15); border-color: var(--accent); color: var(--accent); }
+    .step.active .num { background: var(--accent); border-color: var(--accent); color: #04110a; box-shadow: 0 0 0 4px rgba(74,222,128,0.12); }
+    .step.done .lbl, .step.active .lbl { color: var(--text); }
 
-    textarea {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.92rem;
-      padding: 11px 13px;
-      resize: vertical;
-      min-height: 110px;
-      outline: none;
-      transition: border-color 0.15s;
-      line-height: 1.5;
+    .label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+
+    textarea, input[type=number] {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text); font-family: inherit;
+      font-size: 0.9rem; padding: 12px 14px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 96px; line-height: 1.55; }
+    textarea:focus, input:focus { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(34,197,94,0.10); }
+    textarea::placeholder { color: var(--faint); }
 
-    .coords-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
-
-    .coord-field label { display: block; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
-
-    .coord-field input {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: 'Consolas', monospace;
-      font-size: 0.92rem;
-      padding: 8px 11px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .coord-field input:focus { border-color: var(--accent2); }
+    .coords { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+    .coord label { display: block; font-size: 0.66rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.04em; }
+    .coord input { font-family: var(--mono); font-size: 0.86rem; padding: 9px 11px; }
 
     .btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 11px 18px; border: none; border-radius: var(--radius);
-      font-family: inherit; font-size: 0.92rem; font-weight: 600;
-      cursor: pointer; transition: opacity 0.15s, transform 0.1s; width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      padding: 12px 18px; border: 1px solid transparent; border-radius: var(--r);
+      font-family: inherit; font-size: 0.9rem; font-weight: 650; cursor: pointer;
+      transition: filter 0.15s, transform 0.08s, opacity 0.15s; width: 100%;
     }
-    .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-generate { background: var(--accent); color: #000; }
-    .btn-execute  { background: var(--accent2); color: #000; }
-    .btn-execute:disabled { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-d)); color: #04110a; }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+    .btn-cyan { background: linear-gradient(180deg, #38bdf8, #0ea5e9); color: #021016; }
+    .btn-cyan:hover:not(:disabled) { filter: brightness(1.07); }
+    .btn-ghost { background: var(--surface); border-color: var(--border-2); color: var(--muted); }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--faint); }
+    .btn-row { display: flex; gap: 9px; }
 
-    .spinner {
-      width: 15px; height: 15px;
-      border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
-      border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
-    }
+    .spinner { width: 15px; height: 15px; border: 2px solid rgba(0,0,0,0.25); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .intent-box {
+    /* ── Cards (brief / questions / intent / review) ─────────── */
+    .card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 13px; font-size: 0.8rem;
-      line-height: 1.65; display: none;
+      border-radius: var(--r-lg); padding: 16px; display: none;
+      animation: rise 0.3s ease;
     }
-    .intent-box .kv { display: flex; gap: 8px; margin-bottom: 3px; }
-    .intent-box .k  { color: var(--muted); min-width: 76px; }
-    .intent-box .v  { color: var(--accent); font-family: 'Consolas', monospace; font-size: 0.78rem; }
+    .card.show { display: block; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .card-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .card-title.violet { color: var(--int); }
+    .card-title.cyan { color: var(--cyan); }
+    .brief-text { font-size: 0.86rem; line-height: 1.6; color: var(--text); }
+    .assumptions { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border); }
+    .assumptions .a { font-size: 0.78rem; color: var(--muted); line-height: 1.7; display: flex; gap: 7px; }
+    .assumptions .a::before { content: '›'; color: var(--accent); font-weight: 700; }
 
-    .hint { color: var(--muted); font-size: 0.73rem; line-height: 1.55; }
-
-    /* Right panel */
-    .panel-right {
-      display: flex; flex-direction: column; overflow: hidden;
+    .question { margin-bottom: 16px; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.85rem; font-weight: 600; margin-bottom: 9px; line-height: 1.4; }
+    .options { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+    .opt {
+      font-size: 0.78rem; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      background: var(--surface-2); border: 1px solid var(--border-2); color: var(--muted);
+      transition: all 0.13s; user-select: none;
     }
+    .opt:hover { border-color: var(--faint); color: var(--text); }
+    .opt.sel { background: rgba(74,222,128,0.14); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .q-custom { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text); font-family: inherit; font-size: 0.8rem; padding: 8px 11px; outline: none; }
+    .q-custom:focus { border-color: var(--accent-d); }
 
-    .tabs {
-      display: flex; gap: 0; border-bottom: 1px solid var(--border);
-      padding: 0 24px; flex-shrink: 0;
-    }
+    .kv { display: flex; gap: 10px; margin-bottom: 5px; font-size: 0.82rem; }
+    .kv .k { color: var(--muted); min-width: 70px; }
+    .kv .v { color: var(--text); font-family: var(--mono); font-size: 0.78rem; }
+    .feat { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .feat .f { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-2); color: var(--muted); }
 
-    .tab {
-      padding: 13px 18px; font-size: 0.82rem; font-weight: 600;
-      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
-      transition: color 0.15s, border-color 0.15s; user-select: none;
-      display: flex; align-items: center; gap: 7px;
+    .score-row { display: flex; align-items: center; gap: 13px; margin-bottom: 11px; }
+    .score-ring { font-size: 1.5rem; font-weight: 800; color: var(--accent); font-family: var(--mono); }
+    .score-ring small { font-size: 0.7rem; color: var(--faint); font-weight: 500; }
+    .review-text { font-size: 0.82rem; line-height: 1.6; color: var(--muted); }
+
+    .hint { color: var(--faint); font-size: 0.74rem; line-height: 1.6; }
+    .hint b { color: var(--muted); }
+
+    /* ── Right: pipeline strip ──────────────────────────────── */
+    .pipeline {
+      display: flex; align-items: center; gap: 0; padding: 13px 24px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto;
     }
+    .stage { display: flex; align-items: center; gap: 8px; }
+    .stage .node {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+      border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+      font-size: 0.74rem; font-weight: 600; color: var(--faint); white-space: nowrap;
+      transition: all 0.3s;
+    }
+    .stage .node .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); transition: all 0.3s; }
+    .stage.run .node { color: var(--cyan); border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.07); }
+    .stage.run .node .dot { background: var(--cyan); animation: pulse 1s infinite; }
+    .stage.ok .node { color: var(--accent); border-color: rgba(74,222,128,0.35); }
+    .stage.ok .node .dot { background: var(--accent); }
+    .stage .link { width: 22px; height: 1px; background: var(--border-2); }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+    .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0; }
+    .tab { padding: 13px 16px; font-size: 0.8rem; font-weight: 600; color: var(--faint); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
     .tab:hover { color: var(--text); }
-    .tab.active-all { color: var(--accent2); border-color: var(--accent2); }
-    .tab.active-ext { color: var(--ext);    border-color: var(--ext); }
-    .tab.active-int { color: var(--int);    border-color: var(--int); }
+    .tab.on-all { color: var(--cyan); border-color: var(--cyan); }
+    .tab.on-ext { color: var(--ext); border-color: var(--ext); }
+    .tab.on-int { color: var(--int); border-color: var(--int); }
+    .tcount { font-size: 0.66rem; padding: 1px 7px; border-radius: 999px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
 
-    .tab-count {
-      font-size: 0.68rem; padding: 1px 6px; border-radius: 999px;
-      font-weight: 700; background: var(--border); color: var(--muted);
-    }
+    .body { flex: 1; display: flex; flex-direction: column; gap: 13px; padding: 16px 24px; overflow: hidden; }
+    .statusbar { display: flex; align-items: center; gap: 11px; min-height: 26px; flex-shrink: 0; flex-wrap: wrap; }
+    .pill { font-size: 0.68rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: 0.04em; }
+    .pill-ok { background: rgba(74,222,128,0.14); color: var(--accent); border: 1px solid rgba(74,222,128,0.3); }
+    .pill-err { background: rgba(251,113,133,0.14); color: var(--danger); border: 1px solid rgba(251,113,133,0.3); }
+    .pill-fix { background: rgba(56,189,248,0.12); color: var(--cyan); border: 1px solid rgba(56,189,248,0.3); cursor: pointer; }
+    .meta { color: var(--muted); font-size: 0.78rem; }
 
-    .right-body {
-      flex: 1; display: flex; flex-direction: column; gap: 14px;
-      padding: 18px 24px; overflow: hidden;
-    }
+    .errbox { background: rgba(251,113,133,0.06); border: 1px solid rgba(251,113,133,0.22); border-radius: var(--r); padding: 11px 13px; font-size: 0.78rem; color: var(--danger); line-height: 1.7; display: none; flex-shrink: 0; max-height: 120px; overflow-y: auto; }
+    .fixbox { background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: var(--r); padding: 11px 13px; font-size: 0.77rem; color: var(--muted); line-height: 1.7; display: none; flex-shrink: 0; max-height: 150px; overflow-y: auto; font-family: var(--mono); }
 
-    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; flex-shrink: 0; }
+    .cmds { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow-y: auto; font-family: var(--mono); font-size: 0.78rem; line-height: 1.6; }
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--faint); text-align: center; }
+    .empty svg { opacity: 0.4; }
+    .ahead { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); position: sticky; top: 0; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; backdrop-filter: blur(4px); }
+    .ahead.ext { color: var(--ext); } .ahead.int { color: var(--int); }
+    .ahead .d { width: 6px; height: 6px; border-radius: 50%; }
+    .ahead.ext .d { background: var(--ext); } .ahead.int .d { background: var(--int); }
+    .crow { display: flex; align-items: baseline; gap: 11px; padding: 4px 16px; border-bottom: 1px solid rgba(38,44,61,0.5); }
+    .crow:hover { background: rgba(255,255,255,0.02); }
+    .crow.ext { border-left: 2px solid rgba(251,146,60,0.45); }
+    .crow.int { border-left: 2px solid rgba(192,132,252,0.45); }
+    .cn { color: var(--faint); font-size: 0.66rem; min-width: 30px; text-align: right; user-select: none; }
+    .ct { color: var(--text); word-break: break-all; }
+    .k-fill { color: var(--cyan); font-weight: 600; }
+    .k-set { color: var(--warn); font-weight: 600; }
+    .k-blk { color: var(--accent); }
 
-    .pill {
-      font-size: 0.7rem; font-weight: 700; padding: 2px 9px;
-      border-radius: 999px; text-transform: uppercase; letter-spacing: 0.07em;
-    }
-    .pill-ok   { background: rgba(74,222,128,0.15); color: var(--accent); border: 1px solid rgba(74,222,128,0.3); }
-    .pill-err  { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
-    .cmd-count { color: var(--muted); font-size: 0.8rem; }
-
-    .errors-list {
-      background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25);
-      border-radius: var(--radius); padding: 11px 13px;
-      font-size: 0.8rem; color: var(--danger); line-height: 1.7; display: none; flex-shrink: 0;
-    }
-
-    .commands-container {
-      flex: 1; background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow-y: auto;
-      font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; line-height: 1.6;
-    }
-
-    .commands-container .empty {
-      display: flex; align-items: center; justify-content: center;
-      height: 100%; color: var(--muted); font-size: 0.88rem;
-    }
-
-    .agent-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 14px; background: rgba(255,255,255,0.025);
-      border-bottom: 1px solid var(--border); position: sticky; top: 0;
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-    }
-    .agent-header.ext { color: var(--ext); }
-    .agent-header.int { color: var(--int); }
-    .agent-header .dot { width: 6px; height: 6px; border-radius: 50%; }
-    .agent-header .dot-ext { background: var(--ext); }
-    .agent-header .dot-int { background: var(--int); }
-
-    .cmd-row {
-      display: flex; align-items: baseline; gap: 10px;
-      padding: 5px 14px; border-bottom: 1px solid rgba(42,45,58,0.6);
-      transition: background 0.1s;
-    }
-    .cmd-row:hover { background: rgba(255,255,255,0.025); }
-    .cmd-row.ext-row { border-left: 2px solid rgba(249,115,22,0.4); }
-    .cmd-row.int-row { border-left: 2px solid rgba(168,85,247,0.4); }
-
-    .cmd-num { color: var(--muted); font-size: 0.68rem; min-width: 28px; text-align: right; user-select: none; }
-    .cmd-text { color: var(--text); word-break: break-all; }
-    .kw-fill    { color: var(--accent2); font-weight: 600; }
-    .kw-setblock { color: var(--warn); font-weight: 600; }
-    .kw-block   { color: var(--accent); }
-
-    /* Countdown */
-    .countdown-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-      display: none; flex-direction: column; align-items: center;
-      justify-content: center; gap: 14px; z-index: 100;
-    }
-    .countdown-number { font-size: 6rem; font-weight: 900; color: var(--accent2); line-height: 1; }
-    .countdown-msg { font-size: 1rem; color: var(--text); }
-
-    /* Toast */
-    .toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 13px 18px; font-size: 0.86rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      transform: translateY(60px); opacity: 0;
-      transition: all 0.25s ease; z-index: 200; max-width: 300px;
-    }
+    /* ── Overlay + toast ────────────────────────────────────── */
+    .overlay { position: fixed; inset: 0; background: rgba(5,7,11,0.9); backdrop-filter: blur(3px); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 100; }
+    .overlay .big { font-size: 6rem; font-weight: 900; color: var(--cyan); line-height: 1; font-family: var(--mono); }
+    .overlay .m { font-size: 1.05rem; } .overlay .s { font-size: 0.85rem; color: var(--muted); }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: var(--r); padding: 13px 18px; font-size: 0.84rem; box-shadow: var(--shadow); transform: translateY(70px); opacity: 0; transition: all 0.28s cubic-bezier(.2,.8,.2,1); z-index: 200; max-width: 340px; }
     .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.success { border-color: rgba(74,222,128,0.4); }
-    .toast.error   { border-color: rgba(248,113,113,0.4); }
+    .toast.success { border-color: rgba(74,222,128,0.45); }
+    .toast.error { border-color: rgba(251,113,133,0.45); }
+
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 9px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
   </style>
 </head>
 <body>
 
 <header>
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="2" width="9" height="9" rx="1" fill="#4ade80"/>
-    <rect x="13" y="2" width="9" height="9" rx="1" fill="#22d3ee"/>
-    <rect x="2" y="13" width="9" height="9" rx="1" fill="#f97316"/>
-    <rect x="13" y="13" width="9" height="9" rx="1" fill="#a855f7"/>
-  </svg>
-  <h1>Minecraft Builder</h1>
-  <span class="badge badge-v">v1</span>
-  <span class="badge badge-ext">Exterior Agent</span>
-  <span class="badge badge-int">Interior Agent</span>
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="2" width="9" height="9" rx="1.5" fill="#4ade80"/>
+      <rect x="13" y="2" width="9" height="9" rx="1.5" fill="#38bdf8"/>
+      <rect x="2" y="13" width="9" height="9" rx="1.5" fill="#fb923c"/>
+      <rect x="13" y="13" width="9" height="9" rx="1.5" fill="#c084fc"/>
+    </svg>
+    <div>
+      <h1>Builder Studio</h1>
+      <div class="sub">AI Minecraft Architect</div>
+    </div>
+  </div>
+  <span class="ver">v2</span>
+  <div class="grow"></div>
+  <div class="agent-chips">
+    <span class="chip chip-ext"><span class="d"></span>Exterior</span>
+    <span class="chip chip-int"><span class="d"></span>Interior</span>
+  </div>
 </header>
 
 <div class="main">
-
-  <!-- LEFT PANEL -->
-  <div class="panel-left">
-
-    <div>
-      <div class="section-label">Build Prompt</div>
-      <textarea id="prompt" placeholder="e.g. Build a medieval stone house with a cozy interior living room and bedroom"></textarea>
+  <!-- ── LEFT: control ─────────────────────────────────── -->
+  <div class="left">
+    <div class="stepper" id="stepper">
+      <div class="step active" data-step="1"><span class="num">1</span><span class="lbl">Prompt</span><span class="bar"></span></div>
+      <div class="step" data-step="2"><span class="num">2</span><span class="lbl">Plan</span><span class="bar"></span></div>
+      <div class="step" data-step="3"><span class="num">3</span><span class="lbl">Build</span><span class="bar"></span></div>
+      <div class="step" data-step="4"><span class="num">4</span><span class="lbl">Place</span></div>
     </div>
 
     <div>
-      <div class="section-label">Origin Coordinates</div>
-      <div class="coords-grid">
-        <div class="coord-field"><label>X</label><input type="number" id="ox" value="0" /></div>
-        <div class="coord-field"><label>Y</label><input type="number" id="oy" value="64" /></div>
-        <div class="coord-field"><label>Z</label><input type="number" id="oz" value="0" /></div>
+      <div class="label">Describe your build</div>
+      <textarea id="prompt" placeholder="e.g. A cozy medieval stone cottage with a fireplace, a small library, and a bedroom loft"></textarea>
+    </div>
+
+    <div>
+      <div class="label">Origin coordinates</div>
+      <div class="coords">
+        <div class="coord"><label>X</label><input type="number" id="ox" value="0" /></div>
+        <div class="coord"><label>Y</label><input type="number" id="oy" value="64" /></div>
+        <div class="coord"><label>Z</label><input type="number" id="oz" value="0" /></div>
       </div>
     </div>
 
-    <button class="btn btn-generate" id="btnGenerate" onclick="generate()">
-      <div class="spinner" id="genSpinner"></div>
-      <span id="genLabel">Generate Commands</span>
+    <button class="btn btn-primary" id="btnPlan" onclick="plan()">
+      <span id="planSpin" style="display:none" class="spinner"></span>
+      <span id="planLbl">Brainstorm &amp; Plan</span>
     </button>
 
-    <div class="intent-box" id="intentBox"></div>
-
-    <button class="btn btn-execute" id="btnExecute" disabled onclick="startCountdown()">
-      Execute in Minecraft
-    </button>
-
-    <div class="hint">
-      Switch to Minecraft <em>before</em> clicking Execute. A 3-second countdown gives you time to focus the window.<br><br>
-      Both <strong style="color:var(--ext)">Exterior</strong> and <strong style="color:var(--int)">Interior</strong> agents run in parallel — exterior commands paste first.
+    <!-- Brainstorm brief -->
+    <div class="card" id="briefCard">
+      <div class="card-title cyan">◈ Design brief</div>
+      <div class="brief-text" id="briefText"></div>
+      <div class="assumptions" id="assumptionsBox" style="display:none"></div>
     </div>
 
+    <!-- Clarifying questions -->
+    <div class="card" id="questionsCard">
+      <div class="card-title">✦ A few quick decisions</div>
+      <div id="questionsBox"></div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:0.78rem;color:var(--muted);cursor:pointer;user-select:none">
+        <input type="checkbox" id="refine" style="width:auto;accent-color:var(--accent)" />
+        Run critic refinement pass <span style="color:var(--faint)">(extra agent · more tokens)</span>
+      </label>
+      <div class="btn-row" style="margin-top:11px">
+        <button class="btn btn-ghost" onclick="build(true)">Skip &amp; build</button>
+        <button class="btn btn-cyan" id="btnBuild" onclick="build(false)">
+          <span id="buildSpin" style="display:none" class="spinner"></span>
+          <span id="buildLbl">Build it</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Intent summary -->
+    <div class="card" id="intentCard">
+      <div class="card-title violet">▣ Build spec</div>
+      <div id="intentBox"></div>
+    </div>
+
+    <!-- Critic review -->
+    <div class="card" id="reviewCard">
+      <div class="card-title">★ Reviewer notes</div>
+      <div class="score-row" id="scoreRow" style="display:none">
+        <div class="score-ring"><span id="scoreVal">—</span><small>/100</small></div>
+      </div>
+      <div class="review-text" id="reviewText"></div>
+    </div>
+
+    <!-- Execute -->
+    <button class="btn btn-cyan" id="btnExec" disabled onclick="countdown()">▶ Place in Minecraft</button>
+    <div class="hint">
+      Switch focus to Minecraft <b>before</b> placing — a 3-second countdown lets you focus the window.
+      Commands paste in order: <b>exterior shell → interior</b>. Every command is auto-validated so the build runs clean.
+    </div>
   </div>
 
-  <!-- RIGHT PANEL -->
-  <div class="panel-right">
+  <!-- ── RIGHT: output ─────────────────────────────────── -->
+  <div class="right">
+    <div class="pipeline" id="pipeline">
+      <div class="stage" data-stage="intent"><div class="node"><span class="dot"></span>Intent</div><div class="link"></div></div>
+      <div class="stage" data-stage="exterior"><div class="node"><span class="dot"></span>Exterior</div><div class="link"></div></div>
+      <div class="stage" data-stage="interior"><div class="node"><span class="dot"></span>Interior</div><div class="link"></div></div>
+      <div class="stage" data-stage="repair"><div class="node"><span class="dot"></span>Repair</div><div class="link"></div></div>
+      <div class="stage" data-stage="critic"><div class="node"><span class="dot"></span>Critic</div></div>
+    </div>
 
     <div class="tabs">
-      <div class="tab active-all" id="tab-all"  onclick="switchTab('all')">All Commands <span class="tab-count" id="cnt-all">0</span></div>
-      <div class="tab"           id="tab-ext"  onclick="switchTab('ext')">Exterior Agent <span class="tab-count" id="cnt-ext">0</span></div>
-      <div class="tab"           id="tab-int"  onclick="switchTab('int')">Interior Agent <span class="tab-count" id="cnt-int">0</span></div>
+      <div class="tab on-all" id="tab-all" onclick="tab('all')">All <span class="tcount" id="c-all">0</span></div>
+      <div class="tab" id="tab-ext" onclick="tab('ext')">Exterior <span class="tcount" id="c-ext">0</span></div>
+      <div class="tab" id="tab-int" onclick="tab('int')">Interior <span class="tcount" id="c-int">0</span></div>
     </div>
 
-    <div class="right-body">
-      <div class="status-bar" id="statusBar">
-        <span style="color: var(--muted); font-size: 0.82rem;">Generate commands to see them here.</span>
+    <div class="body">
+      <div class="statusbar" id="statusbar">
+        <span class="meta">Describe a build and click <b style="color:var(--accent)">Brainstorm &amp; Plan</b> to begin.</span>
       </div>
-      <div class="errors-list" id="errorsList"></div>
-      <div class="commands-container" id="commandsContainer">
-        <div class="empty">No commands yet</div>
+      <div class="errbox" id="errbox"></div>
+      <div class="fixbox" id="fixbox"></div>
+      <div class="cmds" id="cmds">
+        <div class="empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <div>No commands yet</div>
+        </div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- COUNTDOWN OVERLAY -->
-<div class="countdown-overlay" id="countdownOverlay">
-  <div class="countdown-msg">Switch to Minecraft now!</div>
-  <div class="countdown-number" id="countdownNum">3</div>
-  <div class="countdown-msg" style="color: var(--muted)">Pasting starts automatically…</div>
+<div class="overlay" id="overlay">
+  <div class="m">Switch to Minecraft now</div>
+  <div class="big" id="cdNum">3</div>
+  <div class="s">Pasting starts automatically…</div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-  let allCmds = [], extCmds = [], intCmds = [];
-  let currentTab = 'all';
+  const S = { brief: '', questions: [], answers: {}, all: [], ext: [], int: [], curTab: 'all' };
 
-  async function generate() {
-    const prompt = document.getElementById('prompt').value.trim();
-    if (!prompt) { showToast('Enter a build prompt first.', 'error'); return; }
-
-    const origin = {
-      x: parseInt(document.getElementById('ox').value) || 0,
-      y: parseInt(document.getElementById('oy').value) || 64,
-      z: parseInt(document.getElementById('oz').value) || 0,
-    };
-
-    setGenLoading(true);
-    clearResults();
-
-    try {
-      const res = await fetch('/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, origin }),
-      });
-      const data = await res.json();
-
-      if (data.error) { showStatus('error', data.error); showToast(data.error, 'error'); return; }
-
-      extCmds = data.exterior_commands || [];
-      intCmds = data.interior_commands || [];
-      allCmds = data.commands || [];
-
-      updateTabCounts();
-      renderIntent(data.intent);
-      renderCurrentTab();
-      renderValidation(data.valid, data.errors);
-
-      if (data.valid) document.getElementById('btnExecute').disabled = false;
-    } catch (e) {
-      showStatus('error', 'Network error: ' + e.message);
-      showToast('Network error', 'error');
-    } finally {
-      setGenLoading(false);
-    }
-  }
-
-  function switchTab(tab) {
-    currentTab = tab;
-    ['all','ext','int'].forEach(t => {
-      const el = document.getElementById('tab-' + t);
-      el.className = 'tab' + (t === tab ? ` active-${t}` : '');
+  // ── Step + pipeline helpers ──────────────────────────────
+  function setStep(n) {
+    document.querySelectorAll('.step').forEach(el => {
+      const s = +el.dataset.step;
+      el.classList.toggle('active', s === n);
+      el.classList.toggle('done', s < n);
     });
-    renderCurrentTab();
+  }
+  function stage(name, state) { // state: '', 'run', 'ok'
+    const el = document.querySelector(`.stage[data-stage="${name}"]`);
+    if (el) el.className = 'stage' + (state ? ' ' + state : '');
+  }
+  function resetStages() { ['intent','exterior','interior','repair','critic'].forEach(s => stage(s, '')); }
+
+  function origin() {
+    return { x: parseInt(ox.value)||0, y: parseInt(oy.value)||64, z: parseInt(oz.value)||0 };
   }
 
-  function renderCurrentTab() {
-    if (currentTab === 'all') renderCommands(allCmds, 'all');
-    else if (currentTab === 'ext') renderCommands(extCmds, 'ext');
-    else renderCommands(intCmds, 'int');
+  // ── Step 2: brainstorm + questions ───────────────────────
+  async function plan() {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { toast('Describe your build first.', 'error'); return; }
+    busy('plan', true);
+    ['briefCard','questionsCard','intentCard','reviewCard'].forEach(id => hide(id));
+    try {
+      const data = await post('/clarify', { prompt });
+      if (data.error) { toast(data.error, 'error'); status('err', data.error); return; }
+      S.brief = data.brainstorm || '';
+      S.questions = data.questions || [];
+      renderBrief(data);
+      renderQuestions(data.questions || []);
+      setStep(2);
+    } catch (e) { toast('Network error', 'error'); }
+    finally { busy('plan', false); }
   }
 
-  function updateTabCounts() {
-    document.getElementById('cnt-all').textContent = allCmds.length;
-    document.getElementById('cnt-ext').textContent = extCmds.length;
-    document.getElementById('cnt-int').textContent = intCmds.length;
+  function renderBrief(d) {
+    document.getElementById('briefText').textContent = d.brainstorm || '';
+    const ab = document.getElementById('assumptionsBox');
+    if ((d.assumptions||[]).length) {
+      ab.innerHTML = '<div class="label" style="margin-bottom:6px">Defaults if unanswered</div>' +
+        d.assumptions.map(a => `<div class="a">${esc(a)}</div>`).join('');
+      ab.style.display = 'block';
+    } else ab.style.display = 'none';
+    show('briefCard');
   }
 
-  function renderCommands(cmds, mode) {
-    const container = document.getElementById('commandsContainer');
-    if (!cmds || cmds.length === 0) {
-      container.innerHTML = '<div class="empty">No commands in this category</div>';
-      return;
-    }
-
-    if (mode === 'all') {
-      let html = '';
-      if (extCmds.length) {
-        html += `<div class="agent-header ext"><div class="dot dot-ext"></div>Exterior Agent — ${extCmds.length} commands</div>`;
-        html += extCmds.map((cmd, i) =>
-          `<div class="cmd-row ext-row"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
-        ).join('');
-      }
-      if (intCmds.length) {
-        html += `<div class="agent-header int"><div class="dot dot-int"></div>Interior Agent — ${intCmds.length} commands</div>`;
-        html += intCmds.map((cmd, i) =>
-          `<div class="cmd-row int-row"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
-        ).join('');
-      }
-      container.innerHTML = html;
-    } else {
-      const cls = mode + '-row';
-      container.innerHTML = cmds.map((cmd, i) =>
-        `<div class="cmd-row ${cls}"><span class="cmd-num">${i+1}</span><span class="cmd-text">${hl(cmd)}</span></div>`
-      ).join('');
-    }
+  function renderQuestions(qs) {
+    S.answers = {};
+    const box = document.getElementById('questionsBox');
+    if (!qs.length) { box.innerHTML = '<div class="hint">No clarifications needed — ready to build.</div>'; show('questionsCard'); return; }
+    box.innerHTML = qs.map((q, qi) => `
+      <div class="question">
+        <div class="q-text">${esc(q.question)}</div>
+        <div class="options" id="opts-${qi}">
+          ${(q.options||[]).map(o => `<span class="opt" onclick="pick(${qi}, this, '${esc(o).replace(/'/g,"\\'")}')">${esc(o)}</span>`).join('')}
+        </div>
+        ${q.allow_custom ? `<input class="q-custom" placeholder="…or type your own" oninput="custom(${qi}, this.value)">` : ''}
+      </div>`).join('');
+    show('questionsCard');
   }
+
+  function pick(qi, el, val) {
+    document.querySelectorAll(`#opts-${qi} .opt`).forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    S.answers[S.questions[qi].question] = val;
+  }
+  function custom(qi, val) {
+    if (val.trim()) {
+      document.querySelectorAll(`#opts-${qi} .opt`).forEach(o => o.classList.remove('sel'));
+      S.answers[S.questions[qi].question] = val.trim();
+    } else delete S.answers[S.questions[qi].question];
+  }
+
+  // ── Step 3: build ────────────────────────────────────────
+  async function build(skip) {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { toast('Describe your build first.', 'error'); return; }
+    busy('build', true);
+    setStep(3);
+    document.getElementById('btnExec').disabled = true;
+    clearOutput();
+    resetStages();
+    animateStages();   // visual progress while agents run
+
+    const refine = document.getElementById('refine').checked;
+    try {
+      const data = await post('/generate', {
+        prompt, origin: origin(),
+        answers: skip ? {} : S.answers,
+        brief: S.brief, refine,
+      });
+      if (data.error) { failStages(); status('err', data.error); toast(data.error, 'error'); return; }
+
+      S.ext = data.exterior_commands || [];
+      S.int = data.interior_commands || [];
+      S.all = data.commands || [];
+      ['intent','exterior','interior','repair'].forEach(s => stage(s, 'ok'));
+      stage('critic', refine ? 'ok' : '');
+
+      counts(); renderIntent(data.intent); renderReview(data); renderTab();
+      renderStatus(data); renderFixes(data.repairs || []);
+      if (S.all.length) { document.getElementById('btnExec').disabled = false; setStep(4); }
+      if ((data.repairs||[]).length) toast(`Auto-fixed ${data.repairs.length} issue${data.repairs.length!==1?'s':''} so every command runs.`, 'success');
+    } catch (e) { failStages(); toast('Network error', 'error'); }
+    finally { busy('build', false); }
+  }
+
+  function animateStages() {
+    const seq = ['intent','exterior','interior','repair','critic'];
+    stage('intent', 'run');
+    let i = 0;
+    S._anim = setInterval(() => {
+      stage(seq[i], 'ok');
+      i++;
+      if (i < seq.length) stage(seq[i], 'run'); else clearInterval(S._anim);
+    }, 650);
+  }
+  function failStages() { clearInterval(S._anim); document.querySelectorAll('.stage.run').forEach(e => e.className = 'stage'); }
+
+  // ── Rendering ────────────────────────────────────────────
+  function counts() {
+    document.getElementById('c-all').textContent = S.all.length;
+    document.getElementById('c-ext').textContent = S.ext.length;
+    document.getElementById('c-int').textContent = S.int.length;
+  }
+  function tab(t) {
+    S.curTab = t;
+    ['all','ext','int'].forEach(x => document.getElementById('tab-'+x).className = 'tab' + (x===t ? ` on-${x}` : ''));
+    renderTab();
+  }
+  function renderTab() {
+    const c = document.getElementById('cmds');
+    const list = S.curTab === 'all' ? S.all : (S.curTab === 'ext' ? S.ext : S.int);
+    if (!list.length) { c.innerHTML = `<div class="empty"><div>No commands in this view</div></div>`; return; }
+    if (S.curTab === 'all') {
+      let h = '';
+      if (S.ext.length) { h += hdr('ext', 'Exterior agent', S.ext.length) + rows(S.ext, 'ext'); }
+      if (S.int.length) { h += hdr('int', 'Interior agent', S.int.length) + rows(S.int, 'int'); }
+      c.innerHTML = h;
+    } else c.innerHTML = rows(list, S.curTab);
+  }
+  const hdr = (cls, t, n) => `<div class="ahead ${cls}"><span class="d"></span>${t} — ${n} commands</div>`;
+  const rows = (list, cls) => list.map((cmd, i) => `<div class="crow ${cls}"><span class="cn">${i+1}</span><span class="ct">${hl(cmd)}</span></div>`).join('');
 
   function hl(cmd) {
-    return cmd
-      .replace(/^\/fill/, '<span class="kw-fill">/fill</span>')
-      .replace(/^\/setblock/, '<span class="kw-setblock">/setblock</span>')
-      .replace(/(minecraft:\w+)/g, '<span class="kw-block">$1</span>');
+    return esc(cmd)
+      .replace(/^\/fill/, '<span class="k-fill">/fill</span>')
+      .replace(/^\/setblock/, '<span class="k-set">/setblock</span>')
+      .replace(/(minecraft:[a-z0-9_]+)/g, '<span class="k-blk">$1</span>');
   }
 
-  function renderIntent(intent) {
-    const box = document.getElementById('intentBox');
-    if (!intent) { box.style.display = 'none'; return; }
-    const s = intent.size || {}, m = intent.materials || {};
-    box.innerHTML = `
-      <div class="kv"><span class="k">Type</span><span class="v">${intent.structure_type||'—'}</span></div>
+  function renderIntent(it) {
+    if (!it) return;
+    const s = it.size||{}, m = it.materials||{};
+    let h = `
+      <div class="kv"><span class="k">Type</span><span class="v">${esc(it.structure_type||'—')}</span></div>
       <div class="kv"><span class="k">Size</span><span class="v">${s.x||'?'} × ${s.y||'?'} × ${s.z||'?'}</span></div>
-      <div class="kv"><span class="k">Style</span><span class="v">${intent.style||'—'}</span></div>
-      <div class="kv"><span class="k">Walls</span><span class="v">${m.walls||'—'}</span></div>
-      <div class="kv"><span class="k">Floor</span><span class="v">${m.floor||'—'}</span></div>
-      <div class="kv"><span class="k">Roof</span><span class="v">${m.roof||'—'}</span></div>
-      <div class="kv"><span class="k">Accent</span><span class="v">${m.accent||'—'}</span></div>
-    `;
-    box.style.display = 'block';
+      <div class="kv"><span class="k">Style</span><span class="v">${esc(it.style||'—')}</span></div>
+      <div class="kv"><span class="k">Walls</span><span class="v">${esc(m.walls||'—')}</span></div>
+      <div class="kv"><span class="k">Floor</span><span class="v">${esc(m.floor||'—')}</span></div>
+      <div class="kv"><span class="k">Roof</span><span class="v">${esc(m.roof||'—')}</span></div>`;
+    if ((it.features||[]).length) h += `<div class="feat">${it.features.map(f => `<span class="f">${esc(f)}</span>`).join('')}</div>`;
+    document.getElementById('intentBox').innerHTML = h;
+    show('intentCard');
   }
 
-  function renderValidation(valid, errors) {
-    const statusBar = document.getElementById('statusBar');
-    const errorsList = document.getElementById('errorsList');
-    if (valid) {
-      statusBar.innerHTML = `<span class="pill pill-ok">Valid</span><span class="cmd-count">${allCmds.length} commands — ${extCmds.length} exterior · ${intCmds.length} interior</span>`;
-      errorsList.style.display = 'none';
-    } else {
-      statusBar.innerHTML = `<span class="pill pill-err">Invalid</span><span class="cmd-count">${errors.length} error${errors.length!==1?'s':''} found</span>`;
-      errorsList.innerHTML = errors.map(e => `• ${e}`).join('<br>');
-      errorsList.style.display = 'block';
-    }
+  function renderReview(d) {
+    if (!d.review) { hide('reviewCard'); return; }
+    const sr = document.getElementById('scoreRow');
+    if (d.score != null) { document.getElementById('scoreVal').textContent = d.score; sr.style.display = 'flex'; }
+    else sr.style.display = 'none';
+    document.getElementById('reviewText').textContent = d.review;
+    show('reviewCard');
   }
 
-  function showStatus(type, msg) {
-    document.getElementById('statusBar').innerHTML =
-      `<span class="pill pill-err">${type}</span><span class="cmd-count">${msg}</span>`;
+  function renderStatus(d) {
+    const sb = document.getElementById('statusbar');
+    const valid = d.valid;
+    let h = valid ? `<span class="pill pill-ok">Ready to run</span>` : `<span class="pill pill-err">${(d.errors||[]).length} issue(s)</span>`;
+    h += `<span class="meta">${S.all.length} commands · ${S.ext.length} exterior · ${S.int.length} interior</span>`;
+    if ((d.repairs||[]).length) h += `<span class="pill pill-fix" onclick="toggleFix()">⟳ ${d.repairs.length} auto-fixed</span>`;
+    sb.innerHTML = h;
+    const eb = document.getElementById('errbox');
+    if (!valid && (d.errors||[]).length) { eb.innerHTML = d.errors.map(e => '• ' + esc(e)).join('<br>'); eb.style.display = 'block'; }
+    else eb.style.display = 'none';
+  }
+  let fixData = [];
+  function renderFixes(rep) { fixData = rep; }
+  function toggleFix() {
+    const fb = document.getElementById('fixbox');
+    if (fb.style.display === 'block') { fb.style.display = 'none'; return; }
+    fb.innerHTML = fixData.map(r => '› ' + esc(r)).join('<br>');
+    fb.style.display = 'block';
   }
 
-  function clearResults() {
-    allCmds = []; extCmds = []; intCmds = [];
-    updateTabCounts();
-    document.getElementById('intentBox').style.display = 'none';
-    document.getElementById('commandsContainer').innerHTML = '<div class="empty">Generating… (both agents running in parallel)</div>';
-    document.getElementById('statusBar').innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">Running Exterior + Interior agents…</span>';
-    document.getElementById('errorsList').style.display = 'none';
-    document.getElementById('btnExecute').disabled = true;
+  // ── Execute ──────────────────────────────────────────────
+  function countdown() {
+    if (!S.all.length) return;
+    const ov = document.getElementById('overlay'), n = document.getElementById('cdNum');
+    ov.style.display = 'flex'; let c = 3; n.textContent = c;
+    const iv = setInterval(() => { c--; if (c === 0) { clearInterval(iv); ov.style.display = 'none'; runExec(); } else n.textContent = c; }, 1000);
   }
-
-  function setGenLoading(on) {
-    document.getElementById('genSpinner').style.display = on ? 'block' : 'none';
-    document.getElementById('genLabel').textContent = on ? 'Running agents…' : 'Generate Commands';
-    document.getElementById('btnGenerate').disabled = on;
-  }
-
-  function startCountdown() {
-    if (!allCmds.length) return;
-    const overlay = document.getElementById('countdownOverlay');
-    const num = document.getElementById('countdownNum');
-    overlay.style.display = 'flex';
-    let count = 3;
-    num.textContent = count;
-    const iv = setInterval(() => {
-      count--;
-      if (count === 0) { clearInterval(iv); overlay.style.display = 'none'; runExecute(); }
-      else num.textContent = count;
-    }, 1000);
-  }
-
-  async function runExecute() {
-    document.getElementById('btnExecute').disabled = true;
+  async function runExec() {
+    document.getElementById('btnExec').disabled = true;
     try {
-      const res = await fetch('/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commands: allCmds }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        showToast('Execution error: ' + data.error, 'error');
-        document.getElementById('btnExecute').disabled = false;
-      } else {
-        showToast(`Done! Sent ${data.count} commands (${extCmds.length} ext · ${intCmds.length} int).`, 'success');
-      }
-    } catch (e) {
-      showToast('Network error during execution', 'error');
-      document.getElementById('btnExecute').disabled = false;
-    }
+      const data = await post('/execute', { commands: S.all });
+      if (data.error) { toast('Execution error: ' + data.error, 'error'); document.getElementById('btnExec').disabled = false; }
+      else toast(`Done — placed ${data.count} commands.`, 'success');
+    } catch (e) { toast('Network error during placement', 'error'); document.getElementById('btnExec').disabled = false; }
   }
 
-  function showToast(msg, type = 'success') {
+  // ── Utilities ────────────────────────────────────────────
+  async function post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.json();
+  }
+  function busy(which, on) {
+    const map = { plan: ['btnPlan','planSpin','planLbl','Brainstorming…','Brainstorm & Plan'], build: ['btnBuild','buildSpin','buildLbl','Building…','Build it'] };
+    const [btn, spin, lbl, busyT, idleT] = map[which];
+    document.getElementById(spin).style.display = on ? 'block' : 'none';
+    document.getElementById(lbl).textContent = on ? busyT : idleT;
+    document.getElementById(btn).disabled = on;
+  }
+  function clearOutput() {
+    S.all = []; S.ext = []; S.int = []; counts();
+    document.getElementById('cmds').innerHTML = `<div class="empty"><div>Agents are building — exterior &amp; interior run in parallel…</div></div>`;
+    document.getElementById('errbox').style.display = 'none';
+    document.getElementById('fixbox').style.display = 'none';
+    document.getElementById('statusbar').innerHTML = '<span class="meta">Running the multi-agent pipeline…</span>';
+  }
+  function status(type, msg) { document.getElementById('statusbar').innerHTML = `<span class="pill pill-err">${type}</span><span class="meta">${esc(msg)}</span>`; }
+  const show = id => document.getElementById(id).classList.add('show');
+  const hide = id => document.getElementById(id).classList.remove('show');
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function toast(msg, type='success') {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = `toast ${type} show`;
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+    t.textContent = msg; t.className = `toast ${type} show`;
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3800);
   }
-
-  document.getElementById('prompt').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
-  });
+  document.getElementById('prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) plan(); });
 </script>
-
 </body>
 </html>

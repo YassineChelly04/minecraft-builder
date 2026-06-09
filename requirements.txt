@@ -1,5 +1,5 @@
 flask
-openai
+groq
 pyautogui
 pyperclip
 python-dotenv

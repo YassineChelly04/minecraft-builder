@@ -1,0 +1,17 @@
+[
+  {"id": "cottage_tiny", "prompt": "a tiny 5x5 cottage", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "medieval_house", "prompt": "a cozy medieval house with a fireplace", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "manor_2storey", "prompt": "a two-storey stone manor with a library", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "modern_villa", "prompt": "a modern villa with large glass windows and a flat roof", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "japanese_temple", "prompt": "a japanese temple with a pagoda roof", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "wizard_tower", "prompt": "a tall wizard tower with a pointed spire", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "warehouse", "prompt": "an industrial brick warehouse with a flat roof", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "factory", "prompt": "a factory hall with a sawtooth roof and a smokestack", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "rowhouse", "prompt": "a victorian rowhouse strip of four units", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "desert_palace", "prompt": "a desert sandstone palace with a courtyard", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "ruins", "prompt": "the mossy ruins of an old stone keep", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "church_dome", "prompt": "a stone church with a domed roof", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "viking_longhouse", "prompt": "a viking longhouse with timber framing", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "office_block", "prompt": "a four-storey modern office block with a glass storefront", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "surprise", "prompt": "surprise me with an interesting small building", "answers": {}, "origin": {"x": 0, "y": 64, "z": 0}}
+]

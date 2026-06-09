@@ -9,8 +9,10 @@ importable and testable on its own:
 Each stage is a single-responsibility module, so new agents or post-processors slot
 in here without touching the web layer.
 """
+import contextvars
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from llm_client import usage_scope
 from orchestrator import get_intent
 from critic_agent import review_build
 from exterior_agent import get_exterior_commands
@@ -68,9 +70,13 @@ def _run_build_agents(intent: dict, origin: dict) -> tuple[list[str], list[str]]
     exterior_cmds, interior_cmds = [], []
     errors_by_agent = {}
 
+    # Copy the current context (stub flag + usage log) into the worker threads so
+    # offline/stub runs and token accounting work across the thread boundary.
+    ctx_ext = contextvars.copy_context()
+    ctx_int = contextvars.copy_context()
     with ThreadPoolExecutor(max_workers=2) as pool:
-        future_ext = pool.submit(get_exterior_commands, intent, origin)
-        future_int = pool.submit(get_interior_commands, intent, origin)
+        future_ext = pool.submit(ctx_ext.run, get_exterior_commands, intent, origin)
+        future_int = pool.submit(ctx_int.run, get_interior_commands, intent, origin)
         for future in as_completed([future_ext, future_int]):
             label = "Exterior" if future is future_ext else "Interior"
             try:
@@ -94,7 +100,16 @@ def _clean(commands: list[str]) -> tuple[list[str], list[str]]:
 
 def build_structure(prompt: str, origin: dict, answers: dict | None = None,
                     brief: str | None = None, refine: bool = True) -> dict:
-    """Full prompt-to-commands build. Returns the payload the web/UI layer serves."""
+    """Full prompt-to-commands build. Returns the payload the web/UI layer serves,
+    including a per-build `usage` token breakdown."""
+    with usage_scope() as usage:
+        result = _build_structure(prompt, origin, answers, brief, refine)
+    result["usage"] = usage.to_dict()
+    return result
+
+
+def _build_structure(prompt: str, origin: dict, answers: dict | None = None,
+                     brief: str | None = None, refine: bool = True) -> dict:
     try:
         intent = get_intent(prompt, answers=answers or {}, brief=brief)
     except Exception as e:  # noqa: BLE001

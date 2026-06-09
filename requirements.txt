@@ -3,3 +3,4 @@ groq
 pyautogui
 pyperclip
 python-dotenv
+pytest

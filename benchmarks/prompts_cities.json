@@ -1,0 +1,7 @@
+[
+  {"id": "industrial_river_town", "prompt": "a smoky victorian industrial river town", "answers": {"size": "M", "waterfront": "yes"}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "rail_yard_city", "prompt": "an interwar city built around a large rail yard", "answers": {"size": "M", "waterfront": "no"}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "dieselpunk_port", "prompt": "a dieselpunk port city with docks and gantry cranes", "answers": {"size": "L", "waterfront": "yes"}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "worker_town", "prompt": "a small worker housing town beside a power station", "answers": {"size": "S", "waterfront": "no"}, "origin": {"x": 0, "y": 64, "z": 0}},
+  {"id": "civic_capital", "prompt": "a modern civic capital with a grand station and city hall", "answers": {"size": "M", "waterfront": "no"}, "origin": {"x": 0, "y": 64, "z": 0}}
+]

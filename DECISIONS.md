@@ -3,6 +3,30 @@
 Running log of every spec ambiguity resolved during the v2 upgrade
 (per IMPLEMENTATION_SPEC §0.4). Newest first.
 
+## Phase E — Execution (datapack writer) — PARTIAL
+
+- **Delivered: `execution/datapack.py` + `/export_datapack`.** The spec calls the
+  datapack writer the de-risking piece to build first; it's the universal
+  execution path (Aternos has no RCON; pyautogui is too slow for 10k+ cmds). Writes
+  `pack.mcmeta` (pack_format by version table, unknown→highest+warn), per-group
+  `.mcfunction` files (leading `/` stripped), a `build_all` master in BUILD_ORDER,
+  shards any group over `FUNCTION_CMD_BUDGET`, plus a best-effort `undo`. CI asserts
+  structure/format; the in-world load is a manual smoke test. `/export_datapack`
+  zips it for download. `/generate` now accepts `mode` and strips the
+  non-serialisable geometry before jsonify.
+- **NOT yet done in Phase E:** RCON client, the 12 industrial archetypes
+  (`architecture/archetypes/`), and `gallery.py`. These are a large surface and
+  are the main outstanding single-building work.
+
+## Phase F — City engine — NOT STARTED
+
+The full city engine (planner/zoning/roads/parceling, city_director +
+district_stylist agents, briefs, connectivity, QA, city_pipeline, city tab UI) is
+the largest remaining phase and is not yet implemented. Config + budgets
+(`CITY_SIZES`, `CITY_TOKEN_BUDGET`) and the `prompts_cities.json` benchmark +
+`run_benchmark` city plumbing (graceful "not built yet") are in place as the
+landing pad.
+
 ## Phase D — DSL + placers + deterministic critic
 
 - **DoD-D / G2 result (dsl, `--no-llm`).** Mean quality **95.4/100** (baseline

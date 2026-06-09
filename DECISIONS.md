@@ -3,6 +3,28 @@
 Running log of every spec ambiguity resolved during the v2 upgrade
 (per IMPLEMENTATION_SPEC §0.4). Newest first.
 
+## Phase B — Knowledge layer
+
+- **No import cycle.** `blocks.py` becomes a shim that resolves the valid set from
+  the registry, so the literal 1.21 set was moved to `knowledge/_base_blocks.py`
+  (pure data, imports nothing). `blocks_registry` imports that; `blocks.py` imports
+  the registry + config. No cycle.
+- **resolve() returns full `minecraft:` ids.** repair/validator compare against
+  namespaced ids, so the registry namespaces everything (version-addition sets may
+  be written bare). `VALID_BLOCKS` now tracks `TARGET_MC_VERSION` (default 1.21.9,
+  626 blocks) — repair/validator are *extended*, never weakened (invariant 4).
+- **Palette block ids stored bare.** Cleaner palette tables; namespaced via
+  `BuildingPalette.mc()` at command-build time. Import-time `_validate_palettes()`
+  raises if any palette block is invalid at its `min_version` (fail at startup).
+- **material_overrides policy.** A user/legacy override block is applied only if it
+  resolves valid at the target version; otherwise it is silently ignored (the
+  palette default stands) rather than failing the build. Fuzzy-repair of overrides
+  deferred — repair.py still catches bad ids downstream.
+- **Deferred to Phase E/F:** `target_mc_version` request param + UI version
+  dropdown and the `mode` per-request override are config-ready (`PIPELINE_MODE`,
+  `TARGET_MC_VERSION`) but not yet surfaced in app.py/UI; wired when the dsl path
+  and city tab land.
+
 ## Phase A — Measurement harness
 
 - **DoD-A baseline (legacy pipeline, `--no-llm`).** 15/15 buildings valid, mean

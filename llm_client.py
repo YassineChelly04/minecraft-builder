@@ -114,19 +114,16 @@ def stub_mode(enabled: bool = True):
 
 def _stub_response(role: str, system: str, user: str) -> str:
     """Return a canned response for a role. Looks for tests/fixtures/<role>.json;
-    falls back to a minimal valid payload so a build never crashes offline."""
+    falls back to a minimal valid payload so a build never crashes offline. The
+    intent stub keys off prompt keywords so offline benchmarks exercise varied
+    styles/roofs deterministically (no network)."""
     fixture = _FIXTURES / f"{role}.json"
     if fixture.exists():
         return fixture.read_text(encoding="utf-8")
+    if role == "intent":
+        return _stub_intent(user)
     # Minimal safe defaults per role.
     defaults = {
-        "intent": json.dumps({
-            "structure_type": "house", "size": {"x": 11, "y": 6, "z": 9},
-            "style": "medieval", "palette_name": "medieval_castle",
-            "room_program": ["living", "kitchen", "bedroom"],
-            "features": [], "notes": "stub",
-            "materials": {},
-        }),
         "clarify": json.dumps({"brief": "A cozy stub build.", "questions": []}),
         "exterior": json.dumps({"ops": []}),
         "interior": json.dumps({"ops": []}),
@@ -141,6 +138,73 @@ def _stub_response(role: str, system: str, user: str) -> str:
         "district_stylist": json.dumps({"districts": []}),
     }
     return defaults.get(role, "{}")
+
+
+def _stub_intent(user: str) -> str:
+    """Keyword-based intent so offline runs vary by prompt (deterministic)."""
+    t = user.lower()
+
+    def has(*kw):
+        return any(k in t for k in kw)
+
+    style, structure, palette = "medieval", "house", "medieval_castle"
+    size = {"x": 11, "y": 6, "z": 9}
+    rooms = ["living", "kitchen", "bedroom"]
+    features: list[str] = []
+    if has("modern", "villa"):
+        style, structure, palette = "modern", "villa", "modern_villa"
+        size = {"x": 13, "y": 8, "z": 11}
+    elif has("japanese", "temple", "pagoda"):
+        style, structure, palette = "japanese", "temple", "japanese_temple"
+        size = {"x": 13, "y": 8, "z": 13}
+    elif has("wizard", "tower", "spire"):
+        style, structure, palette = "wizard", "tower", "fantasy_tower"
+        size = {"x": 9, "y": 14, "z": 9}
+        rooms = ["living"]
+    elif has("warehouse"):
+        style, structure, palette = "warehouse", "warehouse", "brick_industrial"
+        size = {"x": 18, "y": 8, "z": 13}
+        rooms = []
+    elif has("factory", "smokestack"):
+        style, structure, palette = "factory", "factory", "brick_industrial"
+        size = {"x": 20, "y": 9, "z": 12}
+        rooms = []
+        features = ["smokestack"]
+    elif has("rowhouse"):
+        style, structure, palette = "victorian", "rowhouse", "victorian_steam"
+        size = {"x": 20, "y": 8, "z": 10}
+        rooms = ["living", "kitchen", "bedroom"]
+    elif has("desert", "palace", "sandstone"):
+        style, structure, palette = "desert", "palace", "desert_palace"
+        size = {"x": 15, "y": 8, "z": 15}
+        rooms = ["living", "kitchen", "bedroom", "study"]
+    elif has("ruin"):
+        style, structure, palette = "ruins", "keep", "ruins"
+        size = {"x": 13, "y": 7, "z": 11}
+    elif has("church", "dome"):
+        style, structure, palette = "church", "church", "fantasy_tower"
+        size = {"x": 13, "y": 9, "z": 15}
+        rooms = ["living"]
+    elif has("viking", "longhouse"):
+        style, structure, palette = "viking", "longhouse", "viking_longhouse"
+        size = {"x": 11, "y": 7, "z": 19}
+    elif has("office"):
+        style, structure, palette = "modern", "office", "modern_villa"
+        size = {"x": 14, "y": 12, "z": 12}
+        rooms = []
+    elif has("cottage", "tiny"):
+        style, structure, palette = "cottage", "cottage", "cottage_core"
+        size = {"x": 7, "y": 5, "z": 7}
+        rooms = ["living"]
+    if has("fireplace") and "fireplace" not in features:
+        features.append("fireplace")
+    if has("library", "bookshelf"):
+        features.append("library")
+    return json.dumps({
+        "structure_type": structure, "size": size, "style": style,
+        "palette_name": palette, "room_program": rooms, "features": features,
+        "notes": "stub", "materials": {},
+    })
 
 
 # ── Real client ──────────────────────────────────────────────────────────────

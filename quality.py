@@ -109,6 +109,17 @@ def _envelope_from_grid(grid: VoxelGrid) -> _Env | None:
     return _Env(x1, z1, x2, z2, floor_y, wall_top)
 
 
+def _env_from_geometry(geometry) -> _Env | None:
+    """Precise envelope straight from BuildingGeometry (no grid guessing)."""
+    fp = getattr(geometry, "footprint", None)
+    if not fp:
+        return None
+    out = geometry.outline()
+    floor_y = geometry.origin.y
+    wall_top = max(floor_y + 1, geometry.roof_base_y - 1)
+    return _Env(out.x1, out.z1, out.x2, out.z2, floor_y, wall_top)
+
+
 def _perimeter_cells(x1, z1, x2, z2) -> list[tuple[int, int]]:
     cells = []
     for x in range(x1, x2 + 1):
@@ -335,7 +346,9 @@ def _furniture_density(grid: VoxelGrid, env: _Env) -> float | None:
 
 def score_build(commands: list[str], intent_or_brief, geometry=None) -> BuildScore:
     grid = VoxelGrid.from_commands(commands)
-    env = _envelope_from_grid(grid)
+    env = _env_from_geometry(geometry) if geometry is not None else None
+    if env is None:
+        env = _envelope_from_grid(grid)
 
     intent = intent_or_brief if isinstance(intent_or_brief, dict) else {}
     features = list(intent.get("features", []) or [])

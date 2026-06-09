@@ -43,7 +43,7 @@ def _last_run() -> dict[str, dict]:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        last[row.get("id", "")] = row
+        last[f"{row.get('id', '')}|{row.get('mode', '')}"] = row
     return last
 
 
@@ -54,7 +54,7 @@ def _append_runs(rows: list[dict]) -> None:
             f.write(json.dumps(row) + "\n")
 
 
-def _run_building(entry: dict, stub: bool) -> dict:
+def _run_building(entry: dict, stub: bool, mode: str | None = None) -> dict:
     from llm_client import stub_mode
     from pipeline import build_structure
     from quality import score_build
@@ -63,12 +63,13 @@ def _run_building(entry: dict, stub: bool) -> dict:
     with stub_mode(stub):
         result = build_structure(
             prompt=entry["prompt"], origin=entry.get("origin", {"x": 0, "y": 64, "z": 0}),
-            answers=entry.get("answers") or {}, brief=None, refine=False,
+            answers=entry.get("answers") or {}, brief=None, refine=False, mode=mode,
         )
     geometry = result.get("geometry")
     score = score_build(result["commands"], result.get("intent", {}), geometry)
     return {
         "id": entry["id"],
+        "mode": result.get("mode", mode or "legacy"),
         "prompt": entry["prompt"],
         "total": round(score.total, 1),
         "failing": score.failing,
@@ -84,7 +85,7 @@ def _print_table(rows: list[dict], prev: dict[str, dict]) -> None:
     print("-" * 92)
     tot_score = tot_tok = 0.0
     for r in rows:
-        old = prev.get(r["id"], {})
+        old = prev.get(f"{r['id']}|{r.get('mode', '')}", {})
         delta = (r["total"] - old["total"]) if "total" in old else None
         ds = f"{delta:+.1f}" if delta is not None else "-"
         fail = ",".join(r["failing"][:4]) or "-"
@@ -106,6 +107,7 @@ def main() -> None:
     ap.add_argument("--agent", help="A/B: role to override the model for")
     ap.add_argument("--model", help="A/B: model id for --agent")
     ap.add_argument("--prompt-variant", help="A/B: prompt variant tag (reserved)")
+    ap.add_argument("--mode", choices=["legacy", "dsl"], help="pipeline mode override")
     args = ap.parse_args()
 
     # A/B model override via the same env lever config.py reads.
@@ -126,7 +128,7 @@ def main() -> None:
         for entry in prompts:
             try:
                 if suite == "buildings":
-                    row = _run_building(entry, stub=args.no_llm)
+                    row = _run_building(entry, stub=args.no_llm, mode=args.mode)
                 else:
                     row = _run_city(entry, stub=args.no_llm)
             except Exception as e:  # noqa: BLE001 — one bad prompt shouldn't kill the suite

@@ -12,6 +12,7 @@ in here without touching the web layer.
 import contextvars
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import config
 from llm_client import usage_scope
 from orchestrator import get_intent
 from critic_agent import review_build
@@ -99,13 +100,62 @@ def _clean(commands: list[str]) -> tuple[list[str], list[str]]:
 
 
 def build_structure(prompt: str, origin: dict, answers: dict | None = None,
-                    brief: str | None = None, refine: bool = True) -> dict:
+                    brief: str | None = None, refine: bool = True,
+                    mode: str | None = None) -> dict:
     """Full prompt-to-commands build. Returns the payload the web/UI layer serves,
-    including a per-build `usage` token breakdown."""
+    including a per-build `usage` token breakdown. `mode` selects legacy (original
+    freeform path) or dsl (Shell 2.0); defaults to config.PIPELINE_MODE."""
+    mode = (mode or config.PIPELINE_MODE).lower()
     with usage_scope() as usage:
-        result = _build_structure(prompt, origin, answers, brief, refine)
+        if mode == "dsl":
+            result = _build_dsl(prompt, origin, answers, brief, refine)
+        else:
+            result = _build_structure(prompt, origin, answers, brief, refine)
     result["usage"] = usage.to_dict()
     return result
+
+
+def _clean_ordered(commands: list[str]) -> tuple[list[str], list[str]]:
+    """normalize -> repair WITHOUT merge_fills. The DSL/shell layer carves air
+    (door/window openings) after solid fills; merge_fills globally reorders all
+    fills ahead of setblocks, which would re-block those openings. Order must be
+    preserved here, so we skip the merge optimisation on this path."""
+    return repair_commands(normalize_commands(commands))
+
+
+def _build_dsl(prompt: str, origin: dict, answers: dict | None,
+               brief: str | None, refine: bool) -> dict:
+    """Shell 2.0 deterministic path. Placers + DSL agents arrive in Phase D; for
+    now this furnishes the watertight, recessed-window, real-roof envelope in kit
+    mode (zero LLM beyond intent)."""
+    from architecture.brief import intent_to_brief
+    from architecture.shell2 import build_shell2
+
+    try:
+        intent = get_intent(prompt, answers=answers or {}, brief=brief)
+    except Exception as e:  # noqa: BLE001
+        raise PipelineError(f"Orchestrator failed: {e}")
+
+    building = intent_to_brief(intent, origin, prompt=prompt, detail_level="kit")
+    raw, geometry = build_shell2(building)
+    commands, report = _clean_ordered(raw)
+    if not commands:
+        raise PipelineError("Build produced no commands")
+
+    valid, errors = validate_commands(commands)
+    return {
+        "intent": intent,
+        "mode": "dsl",
+        "exterior_commands": commands,
+        "interior_commands": [],
+        "commands": commands,
+        "geometry": geometry,
+        "valid": valid,
+        "errors": errors,
+        "repairs": report,
+        "review": "",
+        "score": None,
+    }
 
 
 def _build_structure(prompt: str, origin: dict, answers: dict | None = None,

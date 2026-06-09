@@ -3,6 +3,39 @@
 Running log of every spec ambiguity resolved during the v2 upgrade
 (per IMPLEMENTATION_SPEC §0.4). Newest first.
 
+## Phase C — Shell 2.0
+
+- **DoD-C result (dsl kit mode, `--no-llm`).** 15/15 valid, mean quality
+  **83.4/100** vs legacy baseline **72.9**. `depth_score` 0→100 (protruding
+  pillars), `roof_complexity` →100 (real gable/flat/pagoda/dome/spire/sawtooth
+  with overhang), walkability/headroom/door 100. Tokens **~310/build** (intent
+  only) vs ~2085. Remaining gaps — `light_coverage`, `furniture_density`,
+  `feature_presence` — are Phase D (auto_light + placers) by design.
+- **Command convention deviation.** Spec §2 says generators emit commands WITHOUT
+  a leading slash. We keep the leading `/` (cmd_fill/cmd_set) so Shell 2.0 flows
+  through the EXISTING normalize→repair→validate chain unchanged (invariant 2).
+  The datapack writer (Phase E) strips the slash for `.mcfunction`.
+- **`merge_fills` breaks carve ordering — DSL path skips it.** `merge_fills`
+  globally reorders *all* `/fill` ahead of all `/setblock`. Shell 2.0 carves air
+  (door/window openings) after solid fills and sprinkles texture via `/setblock`;
+  under the reorder a sprinkle setblock could re-block a door. The dsl path uses
+  `_clean_ordered = repair(normalize(...))` (no merge) to preserve order. Legacy
+  keeps merge_fills.
+- **BSP doors carved last.** Each recursive split inserts one wall + one door, so
+  the room graph is the BSP tree (connected). Deeper-split walls were overwriting
+  shallower doors, so ALL internal doors are now carved after ALL internal walls
+  (doors win), guaranteeing reachability — verified by a flood test on every zone.
+- **Single rectangular footprint in v1.** massing returns the lot rect; L / T /
+  courtyard / tower+wing (multi-rect with shared-wall skipping via a boundary-cell
+  wall builder) are deferred — they need the general union-outline wall pass and
+  aren't required for DoD-C. Watertightness + reachability are guaranteed on the
+  rect path. Multi-storey: storey bands are computed and a straight-staircase
+  placer is unit-tested, but shell2 currently builds one tall interior storey;
+  full upper-floor slabs + furnished upstairs deferred with the multi-rect work.
+- **score_build is geometry-aware.** When a BuildingGeometry is supplied the
+  envelope comes straight from it (true footprint), instead of the grid heuristic
+  which protruding pillars/overhang would otherwise fool.
+
 ## Phase B — Knowledge layer
 
 - **No import cycle.** `blocks.py` becomes a shim that resolves the valid set from

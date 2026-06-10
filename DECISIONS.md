@@ -20,7 +20,24 @@ Running log of every spec ambiguity resolved during the v2 upgrade
   Furnish→Light→Validate for dsl). Verified via Flask test client: template
   renders, dsl generate returns valid + token usage, datapack zip downloads.
 
-## Phase E — Execution (datapack writer) — PARTIAL
+## Phase E — Execution + industrial archetypes — COMPLETE
+
+- **All 12 archetypes** in `architecture/archetypes/` (factory_hall, smokestack_
+  plant, warehouse, rowhouse_strip, office_block, water_tower, gasometer,
+  gantry_crane, train_depot, dock_finger, civic_hall, power_station) + a
+  `generic_building` that wraps shell2. Shell-based ones override the roof and add
+  signature detail; open structures (tower/gasometer/gantry/pier) build custom
+  cylinder/leg geometry and return a `minimal_geometry` stub (footprint + door
+  anchor for city pathing, no rooms). `register` is a class decorator that
+  instantiates — `ARCHETYPES` holds instances. Pipeline routes via
+  `build_archetype(brief)`. Parametrized test: validator-clean at 3 lot sizes ×13.
+- **`execution/rcon_client.py`** — pure-stdlib Source RCON (socket+struct), `run`
+  / `run_many`, auth-guarded. `gallery.py` writes one datapack with all 12 in a row.
+- Benchmark unchanged (dsl mean ~95).
+
+(datapack writer details below remain as built in the earlier partial.)
+
+## Phase E (datapack writer, built first)
 
 - **Delivered: `execution/datapack.py` + `/export_datapack`.** The spec calls the
   datapack writer the de-risking piece to build first; it's the universal

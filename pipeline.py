@@ -129,7 +129,7 @@ def _build_dsl(prompt: str, origin: dict, answers: dict | None,
     now this furnishes the watertight, recessed-window, real-roof envelope in kit
     mode (zero LLM beyond intent)."""
     from architecture.brief import intent_to_brief
-    from architecture.shell2 import build_shell2
+    from architecture.archetypes import build_archetype
 
     try:
         intent = get_intent(prompt, answers=answers or {}, brief=brief)
@@ -138,7 +138,7 @@ def _build_dsl(prompt: str, origin: dict, answers: dict | None,
 
     detail = "llm" if refine else "kit"
     building = intent_to_brief(intent, origin, prompt=prompt, detail_level=detail)
-    raw, geometry = build_shell2(building)
+    raw, geometry = build_archetype(building)
 
     # Interior ops: LLM picks op names from a menu (detail=llm), else kit defaults.
     ops_by_zone = None

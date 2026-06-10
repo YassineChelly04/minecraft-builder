@@ -27,8 +27,10 @@ from normalizer import normalize_commands
 from repair import repair_commands
 
 
-def _seed(prompt: str, origin: dict) -> int:
-    key = f"{prompt}|{origin.get('x',0)},{origin.get('y',0)},{origin.get('z',0)}"
+def _seed(prompt: str, origin: dict, variation: int = 0) -> int:
+    """variation=0 keeps historic deterministic output (tests); the web layer
+    sends a random nonce per build so the same city prompt never repeats."""
+    key = f"{prompt}|{origin.get('x',0)},{origin.get('y',0)},{origin.get('z',0)}|{variation}"
     return int(hashlib.sha256(key.encode()).hexdigest()[:16], 16)
 
 
@@ -38,9 +40,9 @@ def _clean(cmds: list[str]) -> list[str]:
 
 
 def build_city(prompt: str, origin: dict, answers: dict | None = None,
-               mode: str = "datapack", out_dir=None) -> dict:
+               mode: str = "datapack", out_dir=None, variation: int = 0) -> dict:
     answers = answers or {}
-    seed = _seed(prompt, origin)
+    seed = _seed(prompt, origin, variation)
     with usage_scope() as usage:
         city_brief = get_city_brief(prompt, answers)
         plan = plan_city(city_brief, origin, seed=seed)

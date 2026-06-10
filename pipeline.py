@@ -101,14 +101,16 @@ def _clean(commands: list[str]) -> tuple[list[str], list[str]]:
 
 def build_structure(prompt: str, origin: dict, answers: dict | None = None,
                     brief: str | None = None, refine: bool = True,
-                    mode: str | None = None) -> dict:
+                    mode: str | None = None, variation: int = 0) -> dict:
     """Full prompt-to-commands build. Returns the payload the web/UI layer serves,
     including a per-build `usage` token breakdown. `mode` selects legacy (original
-    freeform path) or dsl (Shell 2.0); defaults to config.PIPELINE_MODE."""
+    freeform path) or dsl (Shell 2.0); defaults to config.PIPELINE_MODE.
+    `variation` salts the design seed: 0 = reproducible (tests/benchmarks); the
+    web layer sends a random nonce per Build click so reruns differ."""
     mode = (mode or config.PIPELINE_MODE).lower()
     with usage_scope() as usage:
         if mode == "dsl":
-            result = _build_dsl(prompt, origin, answers, brief, refine)
+            result = _build_dsl(prompt, origin, answers, brief, refine, variation)
         else:
             result = _build_structure(prompt, origin, answers, brief, refine)
     result["usage"] = usage.to_dict()
@@ -124,7 +126,7 @@ def _clean_ordered(commands: list[str]) -> tuple[list[str], list[str]]:
 
 
 def _build_dsl(prompt: str, origin: dict, answers: dict | None,
-               brief: str | None, refine: bool) -> dict:
+               brief: str | None, refine: bool, variation: int = 0) -> dict:
     """Shell 2.0 deterministic path. Placers + DSL agents arrive in Phase D; for
     now this furnishes the watertight, recessed-window, real-roof envelope in kit
     mode (zero LLM beyond intent)."""
@@ -137,7 +139,8 @@ def _build_dsl(prompt: str, origin: dict, answers: dict | None,
         raise PipelineError(f"Orchestrator failed: {e}")
 
     detail = "llm" if refine else "kit"
-    building = intent_to_brief(intent, origin, prompt=prompt, detail_level=detail)
+    building = intent_to_brief(intent, origin, prompt=prompt, detail_level=detail,
+                               answers=answers, variation=variation)
     raw, geometry = build_archetype(building)
 
     # Interior ops: LLM picks op names from a menu (detail=llm), else kit defaults.

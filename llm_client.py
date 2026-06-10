@@ -130,6 +130,11 @@ def _stub_response(role: str, system: str, user: str) -> str:
         "critic": json.dumps({"note": ""}),
         "city_director": json.dumps(_stub_city_director(user)),
         "district_stylist": json.dumps({"districts": []}),
+        # industry/product come from the deterministic brand map; the stub only
+        # needs to fill the taste fields.
+        "factory_director": json.dumps({"company": "", "product": "", "era": "modern",
+                                        "palette_family": "", "mood": "stub plant",
+                                        "signature": []}),
     }
     return defaults.get(role, "{}")
 

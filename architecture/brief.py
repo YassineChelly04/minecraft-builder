@@ -34,12 +34,17 @@ class BuildingBrief:
         return random.Random(self.seed)
 
 
-def seed_from(prompt: str, origin: Vec3 | dict) -> int:
+def seed_from(prompt: str, origin: Vec3 | dict, salt: int = 0) -> int:
+    """Build seed. `salt` is the per-run variation nonce: 0 keeps the historic
+    deterministic behaviour (tests, benchmarks); the web layer sends a random
+    salt per Build click so the same prompt never produces the same build twice."""
     if isinstance(origin, dict):
         origin = (origin.get("x", 0), origin.get("y", 0), origin.get("z", 0))
     else:
         origin = (origin.x, origin.y, origin.z)
-    h = hashlib.sha256(f"{prompt}|{origin}".encode()).hexdigest()
+    # salt==0 must reproduce the historic key byte-for-byte (benchmarks/tests)
+    key = f"{prompt}|{origin}" if salt == 0 else f"{prompt}|{origin}|{salt}"
+    h = hashlib.sha256(key.encode()).hexdigest()
     return int(h[:16], 16)
 
 
@@ -58,10 +63,69 @@ _ARCHETYPE_BY_STRUCTURE = {
 _SIZE_LIMITS = {"stadium": (45, 160, 48)}
 
 
+def _apply_answer_overlay(intent: dict, answers: dict) -> dict:
+    """Deterministically fold the user's ticked clarify answers into the intent.
+    The intent LLM also sees the answers, but a small model can ignore them —
+    this overlay GUARANTEES every answer changes the build: palette/style words
+    set the palette, storey counts set height, size words scale the footprint,
+    and feature-ish answers land in features (the critic patches them in)."""
+    import re
+    from knowledge.palettes import DEFAULT_PALETTE_BY_STYLE, PALETTES
+
+    intent = dict(intent)
+    text_all = " ".join(str(v) for v in answers.values() if v).lower()
+    if not text_all:
+        return intent
+
+    # palette: exact palette name first, then style keyword
+    for name in PALETTES:
+        if name.replace("_", " ") in text_all or name in text_all:
+            intent["palette_name"] = name
+            break
+    else:
+        for kw, name in DEFAULT_PALETTE_BY_STYLE.items():
+            if kw in text_all:
+                intent["palette_name"] = name
+                intent.setdefault("style", kw)
+                break
+
+    # storeys / floors
+    m = re.search(r"(\d+)\s*(?:floors?|storeys?|stories|levels?)", text_all)
+    if m:
+        size = dict(intent.get("size", {}) or {})
+        size["y"] = max(int(size.get("y", 6)), 1 + int(m.group(1)) * 4)
+        intent["size"] = size
+
+    # size words scale the footprint
+    scale = (0.75 if any(w in text_all for w in ("tiny", "small", "compact", "cozy"))
+             else 1.35 if any(w in text_all for w in ("huge", "grand", "massive", "large", "epic"))
+             else 1.0)
+    if scale != 1.0:
+        size = dict(intent.get("size", {}) or {})
+        for ax in ("x", "z"):
+            size[ax] = round(int(size.get(ax, 11)) * scale)
+        intent["size"] = size
+
+    # answers tied to feature-style questions become must-have features
+    feats = list(intent.get("features", []) or [])
+    for q, a in answers.items():
+        if not a:
+            continue
+        ql = str(q).lower()
+        if any(k in ql for k in ("feature", "signature", "include", "focal", "highlight")):
+            feats.append(str(a))
+    if feats:
+        intent["features"] = feats
+    return intent
+
+
 def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
-                    detail_level: str = "kit") -> BuildingBrief:
+                    detail_level: str = "kit", answers: dict | None = None,
+                    variation: int = 0) -> BuildingBrief:
     """Bridge the legacy intent schema into a BuildingBrief. Footprint size comes
     from intent['size']; the lot is the footprint placed at the origin."""
+    if answers:
+        intent = _apply_answer_overlay(intent, answers)
     x, y, z = origin["x"], origin["y"], origin["z"]
     size = intent.get("size", {}) or {}
 
@@ -89,7 +153,7 @@ def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
     palette = resolve_palette(intent)
     storeys = 2 if (sy >= 9 or "storey" in structure or "2" in str(intent.get("notes", ""))) else 1
     room_program = list(intent.get("room_program", []) or _default_rooms(structure, sx, sz))
-    seed = seed_from(prompt or intent.get("notes", "") or structure, origin)
+    seed = seed_from(prompt or intent.get("notes", "") or structure, origin, salt=variation)
 
     return BuildingBrief(
         archetype=archetype, lot=lot, origin_y=y, style=style, palette=palette,

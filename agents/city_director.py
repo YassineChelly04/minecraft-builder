@@ -16,7 +16,7 @@ _DISTRICTS = ["heavy_industry", "warehouses", "housing", "civic", "rail_yard", "
 
 _PROMPT = """\
 Design an industrial city for: {prompt}
-Return JSON only:
+{decisions}Return JSON only:
 {{"era":"victorian|interwar|modern|dieselpunk",
  "palette_family":"brick_industrial|steel_and_copper|gritty_deepslate",
  "districts":[{{"type":"heavy_industry|warehouses|housing|civic|rail_yard|docks","share":0.3}}],
@@ -27,27 +27,63 @@ Rules: 3-6 landmarks; shares sum ~1; districts from the list only.
 JSON only. No prose."""
 
 
+_ERAS = ("victorian", "interwar", "modern", "dieselpunk")
+_FAMILIES = ("brick_industrial", "steel_and_copper", "gritty_deepslate")
+
+
+def _answers_text(answers: dict) -> str:
+    lines = [f"- {q}: {a}" for q, a in answers.items() if a]
+    if not lines:
+        return ""
+    return "Design decisions the user already made (HONOUR them):\n" + "\n".join(lines) + "\n"
+
+
+def _answer_overrides(answers: dict) -> dict:
+    """Deterministic binding: era/palette/waterfront words in any ticked answer
+    override the director, so a tick is guaranteed to change the city even when
+    the small model ignores it."""
+    text = " ".join(str(v) for v in answers.values() if v).lower()
+    out: dict = {}
+    for era in _ERAS:
+        if era in text:
+            out["era"] = era
+            break
+    if any(w in text for w in ("copper", "steel", "metal")):
+        out["palette_family"] = "steel_and_copper"
+    elif any(w in text for w in ("deepslate", "dark", "gritty", "gothic")):
+        out["palette_family"] = "gritty_deepslate"
+    elif "brick" in text:
+        out["palette_family"] = "brick_industrial"
+    if any(w in text for w in ("waterfront", "harbor", "harbour", "dock", "port", "canal", "river")):
+        out["waterfront"] = True
+    return out
+
+
 def get_city_brief(prompt: str, answers: dict | None) -> CityBrief:
     answers = answers or {}
     raw = ""
     try:
-        raw = complete("city_director", _SYSTEM, _PROMPT.format(prompt=prompt))
+        raw = complete("city_director", _SYSTEM,
+                       _PROMPT.format(prompt=prompt, decisions=_answers_text(answers)))
         data = json.loads(raw)
     except Exception:  # noqa: BLE001 — never fail
         data = {}
 
+    overrides = _answer_overrides(answers)
     districts = _valid_districts(data.get("districts"))
     landmarks = _valid_landmarks(data.get("landmarks"))
     size = str(answers.get("size", "M")).upper()
     size = size if size in ("S", "M", "L") else "M"
-    waterfront = str(answers.get("waterfront", "")).lower().startswith(("y", "true"))
+    waterfront = (overrides.get("waterfront", False)
+                  or str(answers.get("waterfront", "")).lower().startswith(("y", "true")))
     # docks imply a waterfront
     if any(d["type"] == "docks" for d in districts):
         waterfront = True
 
     return CityBrief(
-        theme=prompt[:60], era=data.get("era", "victorian"),
-        palette_family=data.get("palette_family", "brick_industrial"),
+        theme=prompt[:60], era=overrides.get("era", data.get("era", "victorian")),
+        palette_family=overrides.get("palette_family",
+                                     data.get("palette_family", "brick_industrial")),
         districts=districts, landmarks=landmarks,
         skyline=data.get("skyline", "stacks_dominate"),
         mood=data.get("mood", ""), size_class=size, waterfront=waterfront,

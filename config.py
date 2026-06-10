@@ -31,12 +31,13 @@ def _model(role_env: str, default: str = DEFAULT_MODEL) -> str:
 # (intent → exterior ‖ interior). Raise them if you're on a paid tier.
 ROLES = {
     "intent":   {"model": _model("LLM_MODEL_INTENT"),               "temperature": 0.3,  "max_tokens": 1024,  "json": True},
-    "clarify":  {"model": _model("LLM_MODEL_CLARIFY"),              "temperature": 0.6,  "max_tokens": 1280,  "json": True},
+    "clarify":  {"model": _model("LLM_MODEL_CLARIFY"),              "temperature": 0.95, "max_tokens": 1280,  "json": True},
     "exterior": {"model": _model("LLM_MODEL_EXTERIOR", BUILD_MODEL), "temperature": 0.2,  "max_tokens": 2048,  "json": False},
     "interior": {"model": _model("LLM_MODEL_INTERIOR", BUILD_MODEL), "temperature": 0.3,  "max_tokens": 2560,  "json": False},
     "critic":   {"model": _model("LLM_MODEL_CRITIC"),               "temperature": 0.1,  "max_tokens": 1280,  "json": True},
-    "city_director":    {"model": _model("LLM_MODEL_CITY", BUILD_MODEL),    "temperature": 0.3,  "max_tokens": 512,  "json": True},
-    "district_stylist": {"model": _model("LLM_MODEL_STYLIST", BUILD_MODEL), "temperature": 0.3,  "max_tokens": 512,  "json": True},
+    "city_director":    {"model": _model("LLM_MODEL_CITY", BUILD_MODEL),    "temperature": 0.5,  "max_tokens": 512,  "json": True},
+    "district_stylist": {"model": _model("LLM_MODEL_STYLIST", BUILD_MODEL), "temperature": 0.5,  "max_tokens": 512,  "json": True},
+    "factory_director": {"model": _model("LLM_MODEL_FACTORY", BUILD_MODEL), "temperature": 0.5,  "max_tokens": 512,  "json": True},
 }
 
 # Network resilience for flaky/free-tier endpoints (rate limits reset per minute).
@@ -59,6 +60,7 @@ PIPELINE_MODE = os.environ.get("PIPELINE_MODE", "dsl")
 TARGET_MC_VERSION = os.environ.get("TARGET_MC_VERSION", "1.21.9")
 
 CITY_SIZES = {"S": 120, "M": 200, "L": 300}
+FACTORY_SIZES = {"S": 120, "M": 180, "L": 260}   # site length along the process flow
 FUNCTION_CMD_BUDGET = int(os.environ.get("FUNCTION_CMD_BUDGET", "60000"))
 CITY_TOKEN_BUDGET = int(os.environ.get("CITY_TOKEN_BUDGET", "40000"))
 HOUSE_TOKEN_BUDGET = int(os.environ.get("HOUSE_TOKEN_BUDGET", "6000"))  # soft warn

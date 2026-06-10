@@ -296,6 +296,7 @@
     <div class="seg" id="modeSeg">
       <button class="on" data-mode="dsl" onclick="setMode('dsl')">Shell 2.0</button>
       <button data-mode="city" onclick="setMode('city')">City</button>
+      <button data-mode="factory" onclick="setMode('factory')">Factory</button>
       <button data-mode="legacy" onclick="setMode('legacy')">Legacy</button>
     </div>
   </div>
@@ -305,7 +306,8 @@
       <option value="1.21">1.21</option>
       <option value="1.21.4">1.21.4</option>
       <option value="1.21.5">1.21.5</option>
-      <option value="1.21.9" selected>1.21.9</option>
+      <option value="1.21.9">1.21.9</option>
+      <option value="26.1.2" selected>26.1.2</option>
       <option value="26.2">26.2 (preview)</option>
     </select>
   </div>
@@ -376,8 +378,15 @@
 
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:auto">
       <button class="btn btn-primary" id="btnExec" disabled onclick="countdown()">Place in Minecraft</button>
+      <div id="placeCtl" style="display:none;flex-direction:column;gap:8px">
+        <div class="btn-row">
+          <button class="btn btn-dark" id="btnPause" style="flex:1" onclick="togglePause()">Pause</button>
+          <button class="btn btn-ghost" id="btnStop" style="flex:1" onclick="stopExec()">Stop</button>
+        </div>
+        <div class="hint" id="placeProg" style="margin:0">Placing…</div>
+      </div>
       <div id="placeRec" style="display:none;font-size:12px;line-height:1.6;color:var(--warn);background:var(--warn-soft);border:1px solid #efe0b3;border-radius:8px;padding:9px 11px">
-        <b>Large build.</b> Keyboard placement types one command at a time (~4/sec).
+        <b>Large build.</b> Keyboard placement types one command at a time (~12/sec).
         Use <b>Export datapack</b> (top-right) for instant in-game placement.
       </div>
       <div class="hint">
@@ -438,12 +447,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const S = { mode: 'dsl', brief: '', questions: [], answers: {}, all: [], ext: [], int: [], curTab: 'all', usage: null };
+  const S = { mode: 'dsl', brief: '', questions: [], answers: {}, all: [], ext: [], int: [], curTab: 'all', usage: null,
+              exec: { method: 'keyboard', rate: 12 } };
+  fetch('/exec_info').then(r => r.json()).then(i => { S.exec = i; updatePlaceButton(); }).catch(() => {});
 
   const FLOWS = {
     dsl:    ['Intent', 'Architecture', 'Furnish', 'Light', 'Validate'],
     legacy: ['Intent', 'Exterior', 'Interior', 'Repair', 'Critic'],
     city:   ['Director', 'Plan', 'Districts', 'Buildings', 'Connect'],
+    factory:['Director', 'Process flow', 'Stages', 'Buildings', 'Links'],
   };
   function renderFlow() {
     const stages = FLOWS[S.mode];
@@ -456,7 +468,7 @@
   function setMode(m) {
     S.mode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
-    const extLbl = { dsl: 'Structure ', city: 'Buildings ', legacy: 'Exterior ' }[m] || 'Structure ';
+    const extLbl = { dsl: 'Structure ', city: 'Buildings ', factory: 'Buildings ', legacy: 'Exterior ' }[m] || 'Structure ';
     document.getElementById('tab-ext').firstChild.textContent = extLbl;
     renderFlow();
   }
@@ -487,16 +499,17 @@
     setTimeout(() => document.getElementById('progress').classList.remove('show'), 700);
   }
 
-  // Place-button ETA + datapack recommendation (keyboard ≈ 4-5 cmd/s).
+  // Place-button ETA from the real path: RCON ≈ 150 cmd/s, keyboard ≈ 12 cmd/s.
   function updatePlaceButton() {
     const n = S.all.length;
     const btn = document.getElementById('btnExec');
     const rec = document.getElementById('placeRec');
     if (!n) { btn.textContent = 'Place in Minecraft'; rec.style.display = 'none'; return; }
-    const secs = Math.round(n / 4.5);
+    const secs = Math.round(n / S.exec.rate);
     const t = secs < 90 ? `${secs}s` : `${Math.round(secs / 60)} min`;
-    btn.textContent = `Place in Minecraft (~${t})`;
-    rec.style.display = n > 400 ? 'block' : 'none';
+    const via = S.exec.method === 'rcon' ? ' · RCON' : '';
+    btn.textContent = `Place in Minecraft (~${t}${via})`;
+    rec.style.display = (n > 400 && S.exec.method !== 'rcon') ? 'block' : 'none';
   }
 
   function setStep(n) {
@@ -570,6 +583,7 @@
   // ── Step 3: build ────────────────────────────────────────
   async function build(skip) {
     if (S.mode === 'city') return buildCity(skip);
+    if (S.mode === 'factory') return buildFactory(skip);
     const prompt = document.getElementById('prompt').value.trim();
     if (!prompt) { toast('Describe your build first.', 'error'); return; }
     // city-scale prompt in a building mode -> the city engine owns this
@@ -577,6 +591,12 @@
       toast('City-scale prompt — switching to City mode.');
       setMode('city');
       return buildCity(skip);
+    }
+    // manufacturer prompt -> the factory engine owns this
+    if (/\b(factory|manufactur\w*|gigafactory|brewery|steelworks|assembly\s+plant|production\s+plant)\b/i.test(prompt)) {
+      toast('Manufacturer prompt — switching to Factory mode.');
+      setMode('factory');
+      return buildFactory(skip);
     }
     busy('build', true); setStep(3);
     document.getElementById('btnExec').disabled = true;
@@ -590,6 +610,7 @@
       const data = await post('/generate', {
         prompt, origin: origin(), mode: S.mode,
         answers: skip ? {} : S.answers, brief: S.brief, refine,
+        variation: Math.floor(Math.random() * 1e9),   // every Build click = a fresh design
         target_mc_version: document.getElementById('mcver').value,
       });
       if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
@@ -597,6 +618,12 @@
         toast('City-scale prompt — switching to City mode.');
         setMode('city');
         setTimeout(() => buildCity(skip), 0);  // after this call's finally{} cleanup
+        return;
+      }
+      if (data.factory_redirect) {  // server-side fallback (e.g. brand names like Ford)
+        toast('Manufacturer prompt — switching to Factory mode.');
+        setMode('factory');
+        setTimeout(() => buildFactory(skip), 0);
         return;
       }
 
@@ -638,6 +665,7 @@
     try {
       const data = await post('/generate_city', {
         prompt, origin: origin(), answers: skip ? {} : S.answers,
+        variation: Math.floor(Math.random() * 1e9),
       });
       if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
       S.all = data.commands || []; S.ext = S.all; S.int = []; S.usage = data.usage || null;
@@ -652,6 +680,54 @@
       }
     } catch (e) { failStages(); toast('Network error', 'error'); }
     finally { busy('build', false); stopProgress(); }
+  }
+
+  // ── Factory build ────────────────────────────────────────
+  async function buildFactory(skip) {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { toast('Describe your factory first.', 'error'); return; }
+    busy('build', true); setStep(3);
+    ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = true);
+    clearOutput(); resetStages(); animateStages();
+    startProgress(10, 'Planning the value stream & raising the plant…');
+    try {
+      const data = await post('/generate_factory', {
+        prompt, origin: origin(), answers: skip ? {} : S.answers,
+        variation: Math.floor(Math.random() * 1e9),
+      });
+      if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
+      S.all = data.commands || []; S.ext = S.all; S.int = []; S.usage = data.usage || null;
+      S.span = { S: 120, M: 180, L: 260 }[(data.plan_summary||{}).size_class] || 180;
+      FLOWS.factory.forEach((_, i) => stage(i, 'ok'));
+      counts(); renderFactory(data); renderTab();
+      renderStatusCity(data);
+      if (S.all.length) {
+        ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = false);
+        updatePlaceButton();
+        setStep(4);
+      }
+    } catch (e) { failStages(); toast('Network error', 'error'); }
+    finally { busy('build', false); stopProgress(); }
+  }
+
+  function renderFactory(d) {
+    const p = d.plan_summary || {}, qa = d.qa || {};
+    let h = `<div style="margin:-2px 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset)">
+               <div style="max-height:220px;overflow:auto">${d.svg || ''}</div></div>`;
+    h += [['Company', p.company || '—'], ['Industry', p.industry], ['Product', p.product],
+          ['Era', p.era], ['Size', p.size_class], ['Rail spur', p.rail ? 'yes' : 'no']]
+      .map(([k,v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${esc(v==null?'—':v)}</span></div>`).join('');
+    if ((p.stages||[]).length) h += `<div class="kv" style="margin-top:8px"><span class="k">Flow</span></div>
+      <div class="chips">${p.stages.map((s,i) => `<span class="c">${i+1}. ${esc(s.replace(/_/g,' '))}</span>`).join('')}</div>`;
+    if ((p.signature||[]).length) h += `<div class="chips">${p.signature.map(s => `<span class="c">${esc(s)}</span>`).join('')}</div>`;
+    document.getElementById('intentBox').innerHTML = h;
+    show('intentCard');
+    const sr = document.getElementById('scoreRow');
+    document.getElementById('scoreVal').textContent = qa.total != null ? qa.total : '—';
+    sr.style.display = 'flex';
+    document.getElementById('reviewText').innerHTML = Object.entries(qa.metrics||{})
+      .map(([k,v]) => `${esc(k)}: <b style="color:${v>=80?'var(--good)':'var(--bad)'}">${v}</b>`).join(' &nbsp;·&nbsp; ');
+    show('reviewCard');
   }
 
   function renderCity(d) {
@@ -680,7 +756,9 @@
     const sb = document.getElementById('statusbar'), qa = d.qa || {};
     let h = (qa.failing && qa.failing.length) ? `<span class="pill pill-err">${qa.failing.length} QA issue(s)</span>`
                                               : `<span class="pill pill-ok">QA ${qa.total}/100</span>`;
-    h += `<span class="meta"><b>${(d.command_count||S.all.length).toLocaleString()}</b> commands · <b>${(d.plan_summary||{}).buildings||0}</b> buildings</span>`;
+    const ps = d.plan_summary || {};
+    const built = ps.buildings != null ? ps.buildings : ((ps.stages||[]).length + (ps.support||[]).length);
+    h += `<span class="meta"><b>${(d.command_count||S.all.length).toLocaleString()}</b> commands · <b>${built}</b> buildings</span>`;
     if (S.usage && S.usage.total_tokens != null) {
       const t = S.usage.total_tokens, pct = Math.min(100, Math.round(t/40000*100));
       h += `<span class="tok"><span class="bar"><i style="width:${pct}%"></i></span><b>${t.toLocaleString()}</b> tokens</span>`;
@@ -810,9 +888,10 @@
   // ── Execute ──────────────────────────────────────────────
   function countdown() {
     if (!S.all.length) return;
-    if (S.all.length > 2500) {  // keyboard at ~4.5 cmd/s: this is 10+ minutes
-      const mins = Math.round(S.all.length / 4.5 / 60);
-      if (!confirm(`This build is ${S.all.length.toLocaleString()} commands — keyboard placement would take ~${mins} minutes and must not be interrupted.\n\nRecommended: Cancel, then use "Export datapack" (instant in-game via /function).\n\nPlace by keyboard anyway?`)) return;
+    if (S.exec.method === 'rcon') { runExec(); return; }   // no window focus needed
+    if (S.all.length > 2500) {  // keyboard at ~12 cmd/s: this is still minutes
+      const mins = Math.round(S.all.length / S.exec.rate / 60);
+      if (!confirm(`This build is ${S.all.length.toLocaleString()} commands — keyboard placement would take ~${mins} minutes (you can Pause/Stop it from the sidebar).\n\nRecommended: Cancel, then use "Export datapack" (instant in-game via /function).\n\nPlace by keyboard anyway?`)) return;
     }
     const ov = document.getElementById('overlay'), n = document.getElementById('cdNum');
     ov.style.display = 'flex'; let c = 3; n.textContent = c;
@@ -820,11 +899,51 @@
   }
   async function runExec() {
     document.getElementById('btnExec').disabled = true;
+    showPlaceCtl(true);
+    const poll = setInterval(async () => {
+      try {
+        const st = await (await fetch('/execute_status')).json();
+        document.getElementById('placeProg').textContent =
+          `${st.placed.toLocaleString()} / ${st.total.toLocaleString()} placed` + (st.paused ? ' — paused' : '');
+      } catch (e) {}
+    }, 500);
     try {
       const data = await post('/execute', { commands: S.all });
-      if (data.error) { toast('Execution error: ' + data.error, 'error'); document.getElementById('btnExec').disabled = false; }
-      else toast(`Done — placed ${data.count} commands.`, 'success');
-    } catch (e) { toast('Network error during placement', 'error'); document.getElementById('btnExec').disabled = false; }
+      if (data.error) { toast('Execution error: ' + data.error, 'error'); }
+      else if (data.status === 'stopped') toast(`Stopped after ${data.count.toLocaleString()} commands.`);
+      else toast(`Done — placed ${data.count.toLocaleString()} commands${data.method === 'rcon' ? ' via RCON' : ''}.`, 'success');
+    } catch (e) { toast('Network error during placement', 'error'); }
+    finally { clearInterval(poll); showPlaceCtl(false); document.getElementById('btnExec').disabled = false; }
+  }
+
+  // ── Pause / stop the input agent mid-placement ───────────
+  function showPlaceCtl(on) {
+    document.getElementById('placeCtl').style.display = on ? 'flex' : 'none';
+    if (on) { document.getElementById('btnPause').textContent = 'Pause'; document.getElementById('placeProg').textContent = 'Placing…'; }
+  }
+  async function togglePause() {
+    const btn = document.getElementById('btnPause');
+    try {
+      if (btn.textContent === 'Pause') {
+        await post('/execute_control', { action: 'pause' });
+        btn.textContent = 'Resume';
+        return;
+      }
+      // Keyboard typing goes to the focused window, so give the user 3s to
+      // switch back to Minecraft before keystrokes start flowing again.
+      btn.disabled = true;
+      if (S.exec.method === 'keyboard') {
+        toast('Resuming in 3s — switch to Minecraft now.');
+        await new Promise(r => setTimeout(r, 3000));
+      }
+      await post('/execute_control', { action: 'resume' });
+      btn.textContent = 'Pause';
+    } catch (e) { toast('Could not reach the placement agent', 'error'); }
+    finally { btn.disabled = false; }
+  }
+  async function stopExec() {
+    try { await post('/execute_control', { action: 'stop' }); }
+    catch (e) { toast('Could not reach the placement agent', 'error'); }
   }
 
   // ── Utilities ────────────────────────────────────────────

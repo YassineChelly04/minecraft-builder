@@ -19,11 +19,17 @@ from pathlib import Path
 
 from config import FUNCTION_CMD_BUDGET, TARGET_MC_VERSION
 
-# data-pack pack_format by version (1.21 line + provisional 26.x).
+# data-pack pack_format by version (1.21 line + 26.x).
 PACK_FORMAT_BY_VERSION = {
     "1.21": 48, "1.21.4": 61, "1.21.5": 71, "1.21.9": 88,
     "26.1": 90, "26.2": 92, "26.3": 94,
 }
+
+# Compatibility safety net: when pack.mcmeta carries `supported_formats`, Minecraft
+# uses THAT range (not `pack_format`) for the "incompatible / made for older|newer
+# version" check. A wide inclusive range means the pack loads on any modern version,
+# so a slightly-off pack_format guess can never make the pack show up as obsolete.
+SUPPORTED_FORMATS = {"min_inclusive": 4, "max_inclusive": 99999}
 
 # Build order for grouped output (city groups slot between these).
 BUILD_ORDER = ["00_forceload", "10_terrain", "20_roads", "30_rail_canal",
@@ -51,9 +57,15 @@ def _strip(cmd: str) -> str:
 
 
 def _pack_format(mc_version: str) -> int:
-    if mc_version in PACK_FORMAT_BY_VERSION:
-        return PACK_FORMAT_BY_VERSION[mc_version]
-    # unknown -> highest known, with a console warning
+    # Resolve from most specific to least: "26.1.2" -> "26.1" -> "26". This lets a
+    # patch version (e.g. the user's 26.1.2) match its minor-version pack_format.
+    parts = mc_version.split(".")
+    while parts:
+        key = ".".join(parts)
+        if key in PACK_FORMAT_BY_VERSION:
+            return PACK_FORMAT_BY_VERSION[key]
+        parts = parts[:-1]
+    # unknown -> highest known (supported_formats still guarantees it loads)
     fmt = max(PACK_FORMAT_BY_VERSION.values())
     print(f"[datapack] unknown mc_version {mc_version!r}; using pack_format {fmt}")
     return fmt
@@ -79,6 +91,7 @@ def write_datapack(commands_by_group: dict[str, list[str]], out_dir: Path | str,
     fmt = _pack_format(mc_version)
     (root / "pack.mcmeta").write_text(json.dumps({
         "pack": {"pack_format": fmt,
+                 "supported_formats": SUPPORTED_FORMATS,
                  "description": f"AI Builder datapack ({build_id}, {mc_version})"}
     }, indent=2), encoding="utf-8")
 

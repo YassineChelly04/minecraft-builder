@@ -35,6 +35,8 @@ ROLES = {
     "exterior": {"model": _model("LLM_MODEL_EXTERIOR", BUILD_MODEL), "temperature": 0.2,  "max_tokens": 2048,  "json": False},
     "interior": {"model": _model("LLM_MODEL_INTERIOR", BUILD_MODEL), "temperature": 0.3,  "max_tokens": 2560,  "json": False},
     "critic":   {"model": _model("LLM_MODEL_CRITIC"),               "temperature": 0.1,  "max_tokens": 1280,  "json": True},
+    "city_director":    {"model": _model("LLM_MODEL_CITY", BUILD_MODEL),    "temperature": 0.3,  "max_tokens": 512,  "json": True},
+    "district_stylist": {"model": _model("LLM_MODEL_STYLIST", BUILD_MODEL), "temperature": 0.3,  "max_tokens": 512,  "json": True},
 }
 
 # Network resilience for flaky/free-tier endpoints (rate limits reset per minute).
@@ -49,7 +51,9 @@ WORLD_MAX_Y = 319
 # ── v2 upgrade single-source-of-truth knobs (IMPLEMENTATION_SPEC §9.2) ───────
 # Pipeline mode: "legacy" = original freeform-command path; "dsl" = Shell 2.0 +
 # placers. Default stays legacy until Gate G3. Per-request override: {"mode": ...}.
-PIPELINE_MODE = os.environ.get("PIPELINE_MODE", "legacy")
+# Gate G3 flipped: dsl (Shell 2.0) is now the default after it beat legacy on
+# 15/15 benchmark prompts. Legacy remains available via env or per-request {"mode"}.
+PIPELINE_MODE = os.environ.get("PIPELINE_MODE", "dsl")
 
 # Target Minecraft version — gates the valid-block set (knowledge.blocks_registry).
 TARGET_MC_VERSION = os.environ.get("TARGET_MC_VERSION", "1.21.9")

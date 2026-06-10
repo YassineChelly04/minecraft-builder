@@ -52,14 +52,32 @@ Running log of every spec ambiguity resolved during the v2 upgrade
   (`architecture/archetypes/`), and `gallery.py`. These are a large surface and
   are the main outstanding single-building work.
 
-## Phase F — City engine — NOT STARTED
+## Phase F — City engine — COMPLETE
 
-The full city engine (planner/zoning/roads/parceling, city_director +
-district_stylist agents, briefs, connectivity, QA, city_pipeline, city tab UI) is
-the largest remaining phase and is not yet implemented. Config + budgets
-(`CITY_SIZES`, `CITY_TOKEN_BUDGET`) and the `prompts_cities.json` benchmark +
-`run_benchmark` city plumbing (graceful "not built yet") are in place as the
-landing pad.
+- **Connectivity guaranteed by construction.** `city/planner.py` lays a regular
+  road grid (arterials every `PITCH=24`, width 5), so every block is bounded by
+  roads on all four sides → every lot is road-adjacent and `door_to_road` is 100
+  without any A* search (QA still verifies via nearest-road distance ≤3). Zoning:
+  industry on the +x edge, civic centre, housing elsewhere, docks on the
+  waterfront edge; lots face the road to their north.
+- **Deterministic, seeded throughout.** `city/briefs.py` maps each lot to a seeded
+  `BuildingBrief` (archetype from a per-district menu, height from the skyline
+  band, palette from the family base, `detail_level=llm` only for landmark lots).
+  `city_pipeline.build_city` runs director(1 call)→plan→stylist(1 call)→briefs→
+  per-building `build_archetype` (kit = 0 tokens)→connectivity, grouped for the
+  datapack, with the `CITY_TOKEN_BUDGET` guard downgrading remaining llm briefs.
+- **DoD-F result (`--suite cities --no-llm`).** 5/5 cities **QA 100/100**, valid,
+  ~314 tokens each (budget 40k). Property test: 20 random seeds × {S,M,L} ×
+  waterfront — no lot overlaps, door_to_road / road_connectivity 100, road
+  lighting ≥80. `city/plot.py` writes a debug SVG of every plan.
+- **Agents** (`city_director`, `district_stylist`) validate/default everything so
+  an LLM miss only degrades style; offline stubs make the whole engine testable.
+- **API/UI.** `/generate_city` returns plan summary + QA + SVG + commands; the
+  redesigned UI gained a **City** engine mode (Director→Plan→Districts→Buildings→
+  Connect flow, SVG plan preview, QA readout, datapack export spanning city bounds).
+- **Gate G3 flipped:** `PIPELINE_MODE` now defaults to `dsl`.
+
+## Phase F — City engine — landing pad (historical)
 
 ## Phase D — DSL + placers + deterministic critic
 

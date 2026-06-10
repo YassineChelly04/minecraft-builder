@@ -79,6 +79,36 @@ def export_datapack():
     return send_file(archive, as_attachment=True, download_name="aibuilder_datapack.zip")
 
 
+@app.route("/generate_city", methods=["POST"])
+def generate_city():
+    from city_pipeline import build_city
+    from city.plot import plan_to_svg
+
+    data = request.get_json()
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+    try:
+        result = build_city(
+            prompt=prompt,
+            origin=data.get("origin", {"x": 0, "y": 64, "z": 0}),
+            answers=data.get("answers") or {},
+            mode=data.get("execute_mode", "datapack"),
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"City build failed: {e}"}), 500
+
+    svg = plan_to_svg(result.pop("plan"))
+    return jsonify({
+        "plan_summary": result["plan_summary"],
+        "qa": result["qa"],
+        "usage": result["usage"],
+        "command_count": result["command_count"],
+        "commands": result["commands"],
+        "svg": svg,
+    })
+
+
 @app.route("/execute", methods=["POST"])
 def execute():
     data = request.get_json()

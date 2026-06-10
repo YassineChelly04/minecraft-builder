@@ -344,6 +344,12 @@ def _furniture_density(grid: VoxelGrid, env: _Env) -> float | None:
 
 # ── orchestration ─────────────────────────────────────────────────────────────
 
+def score_city(plan, commands: list[str]):
+    """City-level QA (lives in city.qa; re-exported here for run_benchmark)."""
+    from city.qa import score_city as _score_city
+    return _score_city(plan, commands)
+
+
 def score_build(commands: list[str], intent_or_brief, geometry=None) -> BuildScore:
     grid = VoxelGrid.from_commands(commands)
     env = _env_from_geometry(geometry) if geometry is not None else None

@@ -283,6 +283,7 @@
     <label>Engine</label>
     <div class="seg" id="modeSeg">
       <button class="on" data-mode="dsl" onclick="setMode('dsl')">Shell 2.0</button>
+      <button data-mode="city" onclick="setMode('city')">City</button>
       <button data-mode="legacy" onclick="setMode('legacy')">Legacy</button>
     </div>
   </div>
@@ -421,6 +422,7 @@
   const FLOWS = {
     dsl:    ['Intent', 'Architecture', 'Furnish', 'Light', 'Validate'],
     legacy: ['Intent', 'Exterior', 'Interior', 'Repair', 'Critic'],
+    city:   ['Director', 'Plan', 'Districts', 'Buildings', 'Connect'],
   };
   function renderFlow() {
     const stages = FLOWS[S.mode];
@@ -433,7 +435,8 @@
   function setMode(m) {
     S.mode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
-    document.getElementById('tab-ext').firstChild.textContent = m === 'dsl' ? 'Structure ' : 'Exterior ';
+    const extLbl = { dsl: 'Structure ', city: 'Buildings ', legacy: 'Exterior ' }[m] || 'Structure ';
+    document.getElementById('tab-ext').firstChild.textContent = extLbl;
     renderFlow();
   }
 
@@ -506,6 +509,7 @@
 
   // ── Step 3: build ────────────────────────────────────────
   async function build(skip) {
+    if (S.mode === 'city') return buildCity(skip);
     const prompt = document.getElementById('prompt').value.trim();
     if (!prompt) { toast('Describe your build first.', 'error'); return; }
     busy('build', true); setStep(3);
@@ -540,6 +544,63 @@
       if ((data.repairs||[]).length) toast(`Auto-fixed ${data.repairs.length} issue${data.repairs.length!==1?'s':''} so every command runs.`, 'success');
     } catch (e) { failStages(); toast('Network error', 'error'); }
     finally { busy('build', false); }
+  }
+
+  // ── City build ───────────────────────────────────────────
+  async function buildCity(skip) {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { toast('Describe your city first.', 'error'); return; }
+    busy('build', true); setStep(3);
+    ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = true);
+    clearOutput(); resetStages(); animateStages();
+    try {
+      const data = await post('/generate_city', {
+        prompt, origin: origin(), answers: skip ? {} : S.answers,
+      });
+      if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
+      S.all = data.commands || []; S.ext = S.all; S.int = []; S.usage = data.usage || null;
+      S.span = { S: 120, M: 200, L: 300 }[(data.plan_summary||{}).size_class] || 200;
+      FLOWS.city.forEach((_, i) => stage(i, 'ok'));
+      counts(); renderCity(data); renderTab();
+      renderStatusCity(data);
+      if (S.all.length) {
+        ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = false);
+        setStep(4);
+      }
+    } catch (e) { failStages(); toast('Network error', 'error'); }
+    finally { busy('build', false); }
+  }
+
+  function renderCity(d) {
+    const p = d.plan_summary || {}, qa = d.qa || {};
+    let h = `<div style="margin:-2px 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset)">
+               <div style="max-height:200px;overflow:auto" >${d.svg || ''}</div></div>`;
+    h += [['Size', p.size_class], ['Era', p.era], ['Buildings', p.buildings],
+          ['Districts', (p.districts||[]).join(', ')], ['Waterfront', p.waterfront ? 'yes' : 'no']]
+      .map(([k,v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${esc(v==null?'—':v)}</span></div>`).join('');
+    if ((p.landmarks||[]).length) h += `<div class="chips">${p.landmarks.map(l => `<span class="c">${esc(l)}</span>`).join('')}</div>`;
+    document.getElementById('intentBox').innerHTML = h;
+    show('intentCard');
+    // QA into the review card
+    const sr = document.getElementById('scoreRow');
+    document.getElementById('scoreVal').textContent = qa.total != null ? qa.total : '—';
+    sr.style.display = 'flex';
+    document.getElementById('reviewText').innerHTML = Object.entries(qa.metrics||{})
+      .map(([k,v]) => `${esc(k)}: <b style="color:${v>=80?'var(--good)':'var(--bad)'}">${v}</b>`).join(' &nbsp;·&nbsp; ');
+    show('reviewCard');
+  }
+
+  function renderStatusCity(d) {
+    const sb = document.getElementById('statusbar'), qa = d.qa || {};
+    let h = (qa.failing && qa.failing.length) ? `<span class="pill pill-err">${qa.failing.length} QA issue(s)</span>`
+                                              : `<span class="pill pill-ok">QA ${qa.total}/100</span>`;
+    h += `<span class="meta"><b>${(d.command_count||S.all.length).toLocaleString()}</b> commands · <b>${(d.plan_summary||{}).buildings||0}</b> buildings</span>`;
+    if (S.usage && S.usage.total_tokens != null) {
+      const t = S.usage.total_tokens, pct = Math.min(100, Math.round(t/40000*100));
+      h += `<span class="tok"><span class="bar"><i style="width:${pct}%"></i></span><b>${t.toLocaleString()}</b> tokens</span>`;
+    }
+    sb.innerHTML = h;
+    document.getElementById('errbox').style.display = 'none';
   }
 
   function animateStages() {
@@ -648,7 +709,7 @@
     try {
       const r = await fetch('/export_datapack', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commands: S.all, origin: origin(), target_mc_version: document.getElementById('mcver').value }),
+        body: JSON.stringify({ commands: S.all, origin: origin(), span: S.span || 64, target_mc_version: document.getElementById('mcver').value }),
       });
       if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j.error || 'export failed'); }
       const blob = await r.blob();
@@ -689,7 +750,7 @@
     document.getElementById(btn).disabled = on;
   }
   function clearOutput() {
-    S.all = []; S.ext = []; S.int = []; S.usage = null; counts();
+    S.all = []; S.ext = []; S.int = []; S.usage = null; S.span = null; counts();
     document.getElementById('cmds').innerHTML = `<div class="empty"><div class="e-t">Generating…</div><div class="e-s">The deterministic engine is assembling architecture, furnishing rooms, and validating every command.</div></div>`;
     document.getElementById('errbox').style.display = 'none';
     document.getElementById('fixbox').style.display = 'none';

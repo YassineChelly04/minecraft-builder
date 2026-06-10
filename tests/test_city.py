@@ -63,6 +63,39 @@ def test_city_commands_validate():
     assert valid, errors[:5]
 
 
+INDUSTRIAL_MIX = [{"type": "heavy_industry", "share": .30},
+                  {"type": "warehouses", "share": .20},
+                  {"type": "housing", "share": .30},
+                  {"type": "civic", "share": .10},
+                  {"type": "docks", "share": .10}]
+
+
+@pytest.mark.parametrize("size", ["S", "M", "L"])
+def test_every_requested_district_is_built(size):
+    """Regression: the old grid dropped the degenerate +x column / south row,
+    silently deleting heavy_industry and docks from M/L cities."""
+    cb = CityBrief(size_class=size, waterfront=True, districts=INDUSTRIAL_MIX,
+                   landmarks=["clock_tower", "city_hall", "gasometer_park"])
+    plan = plan_city(cb, {"x": 0, "y": 64, "z": 0}, seed=99)
+    built = {d.kind for d in plan.districts}
+    assert {d["type"] for d in INDUSTRIAL_MIX} <= built, built
+    # shares approximately respected
+    total = len(plan.all_lots())
+    heavy = sum(len(d.lots) for d in plan.districts if d.kind == "heavy_industry")
+    assert abs(heavy / total - 0.30) < 0.15, f"{heavy}/{total}"
+
+
+def test_economy_lays_freight_rail():
+    from city.economy import plan_economy
+    cb = CityBrief(size_class="M", waterfront=True, districts=INDUSTRIAL_MIX,
+                   landmarks=["clock_tower", "city_hall", "gasometer_park"])
+    plan = plan_city(cb, {"x": 0, "y": 64, "z": 0}, seed=7)
+    profile = plan_economy(cb, plan, 7)
+    assert plan.rail, "no freight rail laid"
+    assert profile.chains, "no supply chains derived"
+    assert "heavy_industry" in profile.menus
+
+
 def test_plan_svg_writes(tmp_path):
     from city.plot import write_plan_svg
     plan = _make_plan(1, size="S")

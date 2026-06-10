@@ -1,6 +1,7 @@
 """
 City orchestration. build_city(prompt, origin, answers, mode) runs:
-  director (1 call) -> planner (deterministic) -> stylist (1 call) -> briefs ->
+  director (1 call) -> planner (deterministic) -> economy (deterministic:
+  supply chains, archetype mix, freight rail) -> stylist (1 call) -> briefs ->
   per-building generation (kit = 0 tokens) -> connectivity -> QA.
 
 Token budget guard (CITY_TOKEN_BUDGET): if exceeded mid-run, remaining landmark
@@ -16,6 +17,7 @@ from agents.district_stylist import get_district_styles
 from architecture.archetypes import build_archetype
 from city.briefs import make_briefs
 from city.connectivity import build_connectivity
+from city.economy import plan_economy
 from city.planner import plan_city
 from city.qa import score_city
 from execution.datapack import write_datapack
@@ -42,8 +44,9 @@ def build_city(prompt: str, origin: dict, answers: dict | None = None,
     with usage_scope() as usage:
         city_brief = get_city_brief(prompt, answers)
         plan = plan_city(city_brief, origin, seed=seed)
+        economy = plan_economy(city_brief, plan, seed)
         styles = get_district_styles(city_brief)
-        briefs = make_briefs(plan, city_brief, styles, seed)
+        briefs = make_briefs(plan, city_brief, styles, seed, economy)
 
         fam = PALETTE_FAMILIES.get(city_brief.palette_family)
         palette = PALETTES.get(fam["base"] if fam else "brick_industrial",
@@ -80,6 +83,7 @@ def build_city(prompt: str, origin: dict, answers: dict | None = None,
             "districts": [d.kind for d in plan.districts],
             "lots": len(plan.all_lots()), "buildings": len(briefs),
             "landmarks": city_brief.landmarks, "waterfront": city_brief.waterfront,
+            "economy": economy.to_dict(),
         },
         "commands": commands,
         "command_count": len(commands),

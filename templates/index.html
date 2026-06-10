@@ -572,6 +572,12 @@
     if (S.mode === 'city') return buildCity(skip);
     const prompt = document.getElementById('prompt').value.trim();
     if (!prompt) { toast('Describe your build first.', 'error'); return; }
+    // city-scale prompt in a building mode -> the city engine owns this
+    if (/\b(city|town|village|metropolis|settlement)\b/i.test(prompt)) {
+      toast('City-scale prompt — switching to City mode.');
+      setMode('city');
+      return buildCity(skip);
+    }
     busy('build', true); setStep(3);
     document.getElementById('btnExec').disabled = true;
     document.getElementById('btnExport').disabled = true;
@@ -587,6 +593,12 @@
         target_mc_version: document.getElementById('mcver').value,
       });
       if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
+      if (data.city_redirect) {   // server-side fallback for city-scale prompts
+        toast('City-scale prompt — switching to City mode.');
+        setMode('city');
+        setTimeout(() => buildCity(skip), 0);  // after this call's finally{} cleanup
+        return;
+      }
 
       S.ext = data.exterior_commands || [];
       S.int = data.interior_commands || [];
@@ -650,6 +662,9 @@
           ['Districts', (p.districts||[]).join(', ')], ['Waterfront', p.waterfront ? 'yes' : 'no']]
       .map(([k,v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${esc(v==null?'—':v)}</span></div>`).join('');
     if ((p.landmarks||[]).length) h += `<div class="chips">${p.landmarks.map(l => `<span class="c">${esc(l)}</span>`).join('')}</div>`;
+    const chains = ((p.economy||{}).chains)||[];
+    if (chains.length) h += `<div class="kv" style="margin-top:8px"><span class="k">Economy</span></div>
+      <div class="chips">${chains.map(c => `<span class="c">${esc(c.replace(' -> ', ' → '))}</span>`).join('')}</div>`;
     document.getElementById('intentBox').innerHTML = h;
     show('intentCard');
     // QA into the review card
@@ -795,6 +810,10 @@
   // ── Execute ──────────────────────────────────────────────
   function countdown() {
     if (!S.all.length) return;
+    if (S.all.length > 2500) {  // keyboard at ~4.5 cmd/s: this is 10+ minutes
+      const mins = Math.round(S.all.length / 4.5 / 60);
+      if (!confirm(`This build is ${S.all.length.toLocaleString()} commands — keyboard placement would take ~${mins} minutes and must not be interrupted.\n\nRecommended: Cancel, then use "Export datapack" (instant in-game via /function).\n\nPlace by keyboard anyway?`)) return;
+    }
     const ov = document.getElementById('overlay'), n = document.getElementById('cdNum');
     ov.style.display = 'flex'; let c = 3; n.textContent = c;
     const iv = setInterval(() => { c--; if (c === 0) { clearInterval(iv); ov.style.display = 'none'; runExec(); } else n.textContent = c; }, 1000);

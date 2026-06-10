@@ -22,7 +22,8 @@ Output ONLY valid JSON with this exact schema:
 
 Rules:
 - Use only valid Minecraft Java Edition block names with the minecraft: prefix.
-- Keep sizes reasonable: max 50 blocks in any dimension.
+- Keep sizes reasonable: max 50 blocks in any dimension for ordinary buildings.
+  Very large open structures (stadium, arena) may go up to 150 in x/z.
 - size.x = width (east-west), size.y = height, size.z = depth (north-south).
 - Honour every explicit design decision the user provided.\
 """

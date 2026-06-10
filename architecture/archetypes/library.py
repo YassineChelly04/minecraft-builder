@@ -247,6 +247,150 @@ class GantryCrane(Archetype):
         return cmds, minimal_geometry(brief, rect, y + h)
 
 
+def _ring_box(rect: Rect, y0: int, y1: int, block: str) -> list[str]:
+    """Solid 1-thick rectangular ring (4 box fills) from y0 to y1."""
+    return [cmd_fill(Vec3(rect.x1, y0, rect.z1), Vec3(rect.x2, y1, rect.z1), block),
+            cmd_fill(Vec3(rect.x1, y0, rect.z2), Vec3(rect.x2, y1, rect.z2), block),
+            cmd_fill(Vec3(rect.x1, y0, rect.z1), Vec3(rect.x1, y1, rect.z2), block),
+            cmd_fill(Vec3(rect.x2, y0, rect.z1), Vec3(rect.x2, y1, rect.z2), block)]
+
+
+@register
+class Stadium(Archetype):
+    """Large open structure: grass pitch with white markings, tiered seating
+    bowl rising to the perimeter wall, four gate tunnels, corner floodlights."""
+    name = "stadium"
+    furnished = False
+
+    def build(self, brief):
+        rect = brief.lot
+        pal = brief.palette
+        y = brief.origin_y
+        rng = brief.rng()
+        margin = max(5, min(rect.width, rect.depth) // 6)
+        tiers = max(3, min(6, margin - 2))
+        seat = rng.choice(["blue_concrete", "red_concrete",
+                           "green_concrete", "orange_concrete"])
+
+        cmds = []
+        # base plate + concourse apron
+        cmds.append(cmd_fill(Vec3(rect.x1, y - 1, rect.z1), Vec3(rect.x2, y - 1, rect.z2), pal.trim))
+        cmds.append(cmd_fill(Vec3(rect.x1, y, rect.z1), Vec3(rect.x2, y, rect.z2), "smooth_stone"))
+
+        # pitch + white touchlines + halfway line
+        field = rect.inset(margin)
+        cmds.append(cmd_fill(Vec3(field.x1, y, field.z1), Vec3(field.x2, y, field.z2), "grass_block"))
+        line = field.inset(1)
+        cmds += _ring_box(line, y, y, "white_concrete")
+        cx, cz = field.center()
+        cmds.append(cmd_fill(Vec3(cx, y, line.z1), Vec3(cx, y, line.z2), "white_concrete"))
+
+        # seating bowl: rings rise from the pitch out to the perimeter
+        for i in range(tiers):
+            ring = rect.inset(margin - 1 - i)
+            top = y + 1 + i
+            cmds += _ring_box(ring, y + 1, top, pal.dominant)
+            cmds += _ring_box(ring, top + 1, top + 1, seat)
+
+        # perimeter wall above the top tier
+        cmds += _ring_box(rect, y + 1, y + tiers + 2, pal.dominant)
+        cmds += _ring_box(rect, y + tiers + 3, y + tiers + 3, pal.accent)
+
+        # four gate tunnels through the stands at the cardinal midpoints
+        gy1, gy2 = y + 1, y + 3
+        cmds += [cmd_fill(Vec3(cx - 1, gy1, rect.z1), Vec3(cx + 1, gy2, field.z1 - 1), "air"),
+                 cmd_fill(Vec3(cx - 1, gy1, field.z2 + 1), Vec3(cx + 1, gy2, rect.z2), "air"),
+                 cmd_fill(Vec3(rect.x1, gy1, cz - 1), Vec3(field.x1 - 1, gy2, cz + 1), "air"),
+                 cmd_fill(Vec3(field.x2 + 1, gy1, cz - 1), Vec3(rect.x2, gy2, cz + 1), "air")]
+
+        # corner floodlight pylons
+        mast_top = y + tiers + 12
+        for (fx, fz) in ((rect.x1 + 1, rect.z1 + 1), (rect.x2 - 1, rect.z1 + 1),
+                         (rect.x1 + 1, rect.z2 - 1), (rect.x2 - 1, rect.z2 - 1)):
+            cmds += _column(fx, fz, y + 1, mast_top, pal.trim)
+            dx = 1 if fx < cx else -1
+            dz = 1 if fz < cz else -1
+            cmds.append(cmd_fill(Vec3(fx, mast_top, fz), Vec3(fx + dx, mast_top, fz + dz), "sea_lantern"))
+
+        return cmds, minimal_geometry(brief, rect, mast_top)
+
+
+@register
+class Refinery(Archetype):
+    """Tank farm + pipe rack + flare stack on a gravel pad."""
+    name = "refinery"
+    furnished = False
+
+    def build(self, brief):
+        rect = brief.lot
+        pal = brief.palette
+        y = brief.origin_y
+        cmds = [cmd_fill(Vec3(rect.x1, y, rect.z1), Vec3(rect.x2, y, rect.z2), "gravel")]
+
+        # storage tanks along the back edge
+        n = 2 + brief.seed % 2
+        r = max(2, min(rect.width // (2 * n + 1), rect.depth // 3))
+        tank_h = 6 + brief.seed % 4
+        cz = rect.z2 - r - 1
+        for i in range(n):
+            cx = rect.x1 + r + 1 + i * (2 * r + 2)
+            if cx + r > rect.x2 - 1:
+                break
+            cmds += _cylinder(cx, cz, r, y + 1, y + tank_h, "iron_block")
+            cmds += _ring(cx, cz, r, y + tank_h, pal.accent)
+            cmds.append(cmd_fill(Vec3(cx - r + 1, y + tank_h, cz - r + 1),
+                                 Vec3(cx + r - 1, y + tank_h, cz + r - 1), pal.trim))
+
+        # pipe rack across the front: support frames + two pipe runs
+        pz = rect.z1 + 2
+        for x in range(rect.x1 + 1, rect.x2, 4):
+            cmds += _column(x, pz, y + 1, y + 4, pal.trim)
+        for py in (y + 3, y + 4):
+            cmds.append(cmd_fill(Vec3(rect.x1 + 1, py, pz), Vec3(rect.x2 - 1, py, pz), "iron_bars"))
+
+        # flare stack in the front corner
+        fx = rect.x2 - 2
+        top = y + tank_h + 8
+        cmds += _column(fx, rect.z1 + 2, y + 1, top, pal.dominant)
+        cmds += _ring(fx, rect.z1 + 2, 1.0, top, "iron_bars")
+        cmds.append(cmd_set(Vec3(fx, top + 1, rect.z1 + 2), "campfire", "[lit=true]"))
+        return cmds, minimal_geometry(brief, rect, top)
+
+
+@register
+class CoalYard(Archetype):
+    """Open stockyard: coal piles on a gravel pad with a loader gantry."""
+    name = "coal_yard"
+    furnished = False
+
+    def build(self, brief):
+        rect = brief.lot
+        pal = brief.palette
+        y = brief.origin_y
+        rng = brief.rng()
+        cmds = [cmd_fill(Vec3(rect.x1, y, rect.z1), Vec3(rect.x2, y, rect.z2), "gravel")]
+
+        # stepped coal piles
+        n = 2 + brief.seed % 3
+        for _ in range(n):
+            base = 2 + rng.randint(0, 1)
+            px = rng.randint(rect.x1 + base + 1, max(rect.x1 + base + 1, rect.x2 - base - 1))
+            pz = rng.randint(rect.z1 + base + 1, max(rect.z1 + base + 1, rect.z2 - base - 1))
+            for lvl in range(base + 1):
+                s = base - lvl
+                cmds.append(cmd_fill(Vec3(px - s, y + 1 + lvl, pz - s),
+                                     Vec3(px + s, y + 1 + lvl, pz + s), "coal_block"))
+
+        # loader gantry across the yard + drop hopper
+        h = 6
+        midz = (rect.z1 + rect.z2) // 2
+        for lx in (rect.x1 + 1, rect.x2 - 1):
+            cmds += _column(lx, midz, y + 1, y + h, pal.trim)
+        cmds.append(cmd_fill(Vec3(rect.x1 + 1, y + h, midz), Vec3(rect.x2 - 1, y + h, midz), "iron_bars"))
+        cmds.append(cmd_set(Vec3((rect.x1 + rect.x2) // 2, y + h - 1, midz), "hopper"))
+        return cmds, minimal_geometry(brief, rect, y + h)
+
+
 @register
 class DockFinger(Archetype):
     name = "dock_finger"

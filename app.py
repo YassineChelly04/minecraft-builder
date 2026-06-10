@@ -1,3 +1,4 @@
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -32,12 +33,20 @@ def clarify():
         return jsonify({"error": f"Clarify agent failed: {e}"}), 500
 
 
+CITY_SCALE_RE = re.compile(r"\b(city|town|village|metropolis|settlement)\b", re.I)
+
+
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json()
     prompt = (data.get("prompt") or "").strip()
     if not prompt:
         return jsonify({"error": "Prompt is required"}), 400
+
+    # City-scale prompts can't be served by the single-building pipeline (it
+    # would return one clamped box) — hand them to the city engine instead.
+    if CITY_SCALE_RE.search(prompt):
+        return jsonify({"city_redirect": True})
 
     try:
         result = build_structure(

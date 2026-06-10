@@ -47,9 +47,15 @@ MAX_SIDE = 48      # max footprint side for a single building
 MAX_HEIGHT = 32    # max total height for a single building
 
 _ARCHETYPE_BY_STRUCTURE = {
+    "stadium": "stadium", "arena": "stadium", "refinery": "refinery",
+    "gasometer": "gasometer", "coal yard": "coal_yard", "water tower": "water_tower",
     "warehouse": "warehouse", "factory": "factory_hall", "office": "office_block",
     "rowhouse": "rowhouse_strip", "depot": "train_depot", "tower": "generic_building",
 }
+
+# Open/custom archetypes have no interior furnish/light pass, so they can be far
+# larger than a watertight shell: (min_side, max_side, max_height).
+_SIZE_LIMITS = {"stadium": (45, 160, 48)}
 
 
 def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
@@ -58,21 +64,27 @@ def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
     from intent['size']; the lot is the footprint placed at the origin."""
     x, y, z = origin["x"], origin["y"], origin["z"]
     size = intent.get("size", {}) or {}
-    # Clamp to engine-sane bounds. The intent model can ask for huge structures
-    # ("a stadium") that would make the deterministic furnish/light passes blow up;
-    # a single building stays within these caps (cities tile many of them).
-    sx = min(MAX_SIDE, max(5, int(size.get("x", 11))))
-    sz = min(MAX_SIDE, max(5, int(size.get("z", 9))))
-    sy = min(MAX_HEIGHT, max(4, int(size.get("y", 6))))
-    lot = Rect(x, z, x + sx - 1, z + sz - 1)
 
     style = str(intent.get("style", "") or "")
     structure = str(intent.get("structure_type", "house") or "house").lower()
-    archetype = _ARCHETYPE_BY_STRUCTURE.get(structure, "generic_building")
-    for key, arch in _ARCHETYPE_BY_STRUCTURE.items():
-        if key in structure:
-            archetype = arch
+    archetype = "generic_building"
+    # structure_type match first; the raw prompt only as a fallback signal
+    for source in (structure, prompt.lower()):
+        match = next((arch for key, arch in _ARCHETYPE_BY_STRUCTURE.items()
+                      if key in source), None)
+        if match:
+            archetype = match
             break
+
+    # Clamp to engine-sane bounds. The intent model can ask for huge structures;
+    # shell-based buildings stay within MAX_SIDE (the deterministic furnish/light
+    # passes scale with interior area), while open archetypes (stadium) get their
+    # own, larger envelope.
+    min_side, max_side, max_h = _SIZE_LIMITS.get(archetype, (5, MAX_SIDE, MAX_HEIGHT))
+    sx = min(max_side, max(min_side, int(size.get("x", 11))))
+    sz = min(max_side, max(min_side, int(size.get("z", 9))))
+    sy = min(max_h, max(4, int(size.get("y", 6))))
+    lot = Rect(x, z, x + sx - 1, z + sz - 1)
 
     palette = resolve_palette(intent)
     storeys = 2 if (sy >= 9 or "storey" in structure or "2" in str(intent.get("notes", ""))) else 1
@@ -90,7 +102,8 @@ def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
 
 
 def _default_rooms(structure: str, sx: int, sz: int) -> list[str]:
-    if any(k in structure for k in ("warehouse", "factory", "depot", "hall", "barn")):
+    if any(k in structure for k in ("warehouse", "factory", "depot", "hall", "barn",
+                                    "stadium", "arena", "refinery", "yard")):
         return []  # non-furnished open archetypes
     area = (sx - 2) * (sz - 2)
     if area < 36:

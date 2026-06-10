@@ -363,6 +363,8 @@ BASE_1_21 = {
     "minecraft:observer", "minecraft:piston", "minecraft:sticky_piston",
     "minecraft:redstone_block", "minecraft:tnt", "minecraft:chain",
     "minecraft:ladder", "minecraft:scaffolding", "minecraft:vine",
+    "minecraft:rail", "minecraft:powered_rail", "minecraft:detector_rail",
+    "minecraft:activator_rail",
 
     # ── NATURE / GROUND ──────────────────────────────────────────
     "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:rooted_dirt",

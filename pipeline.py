@@ -141,8 +141,9 @@ def _build_dsl(prompt: str, origin: dict, answers: dict | None,
     raw, geometry = build_archetype(building)
 
     # Interior ops: LLM picks op names from a menu (detail=llm), else kit defaults.
+    # Open structures (stadium, yards) have no zones — nothing to furnish, no call.
     ops_by_zone = None
-    if detail == "llm":
+    if detail == "llm" and geometry.zones:
         from agents.dsl_interior import get_interior_ops
         ops_by_zone = get_interior_ops(geometry, building)
 

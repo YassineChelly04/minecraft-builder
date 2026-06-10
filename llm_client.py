@@ -128,16 +128,29 @@ def _stub_response(role: str, system: str, user: str) -> str:
         "exterior": json.dumps({"ops": []}),
         "interior": json.dumps({"ops": []}),
         "critic": json.dumps({"note": ""}),
-        "city_director": json.dumps({
-            "era": "victorian", "palette_family": "brick_industrial",
-            "districts": [{"type": "housing", "share": 0.5},
-                          {"type": "heavy_industry", "share": 0.5}],
-            "landmarks": ["clock_tower", "gasometer_park", "city_hall"],
-            "skyline": "stacks_dominate", "mood": "smoky riverside town",
-        }),
+        "city_director": json.dumps(_stub_city_director(user)),
         "district_stylist": json.dumps({"districts": []}),
     }
     return defaults.get(role, "{}")
+
+
+def _stub_city_director(user: str) -> dict:
+    """Keyword-aware city brief so offline runs exercise the full district mix."""
+    t = user.lower()
+    districts = [{"type": "heavy_industry", "share": 0.30},
+                 {"type": "warehouses", "share": 0.20},
+                 {"type": "housing", "share": 0.30},
+                 {"type": "civic", "share": 0.10}]
+    landmarks = ["clock_tower", "gasometer_park", "city_hall"]
+    if any(k in t for k in ("dock", "harbor", "harbour", "port", "waterfront")):
+        districts.append({"type": "docks", "share": 0.10})
+        landmarks.append("harbor_crane_row")
+    if any(k in t for k in ("rail", "train", "station")):
+        districts.append({"type": "rail_yard", "share": 0.10})
+        landmarks.append("grand_station")
+    return {"era": "victorian", "palette_family": "brick_industrial",
+            "districts": districts, "landmarks": landmarks[:6],
+            "skyline": "stacks_dominate", "mood": "smoky riverside town"}
 
 
 def _stub_intent(user: str) -> str:
@@ -161,6 +174,15 @@ def _stub_intent(user: str) -> str:
         style, structure, palette = "wizard", "tower", "fantasy_tower"
         size = {"x": 9, "y": 14, "z": 9}
         rooms = ["living"]
+    elif has("stadium", "arena"):
+        style, structure, palette = "industrial", "stadium", "brick_industrial"
+        size = {"x": 90, "y": 16, "z": 70}
+        rooms = []
+        features = ["floodlights"]
+    elif has("refinery"):
+        style, structure, palette = "industrial", "refinery", "steel_and_copper"
+        size = {"x": 20, "y": 12, "z": 16}
+        rooms = []
     elif has("warehouse"):
         style, structure, palette = "warehouse", "warehouse", "brick_industrial"
         size = {"x": 18, "y": 8, "z": 13}

@@ -39,6 +39,12 @@ def build_connectivity(plan: CityPlan, palette, seed: int) -> dict[str, list[str
         rc.append(cmd_fill(Vec3(c.x2, g, c.z1), Vec3(c.x2, g, c.z2), palette.trim))
     for r in plan.rail:
         rc.append(cmd_fill(Vec3(r.x1, g, r.z1), Vec3(r.x2, g, r.z2), "gravel"))
+        if r.width >= r.depth:  # track runs along the bed's first row
+            rc.append(cmd_fill(Vec3(r.x1, g + 1, r.z1), Vec3(r.x2, g + 1, r.z1),
+                               "rail", "[shape=east_west]"))
+        else:
+            rc.append(cmd_fill(Vec3(r.x1, g + 1, r.z1), Vec3(r.x1, g + 1, r.z2),
+                               "rail", "[shape=north_south]"))
     groups["30_rail_canal"] = rc
 
     # 90 lighting — lamps along road centrelines

@@ -3,8 +3,12 @@ City planner — deterministic, seeded. Produces a CityPlan whose road grid make
 every block road-adjacent on all four sides, so door→road connectivity is
 guaranteed by construction (QA verifies it).
 
-Zoning convention: heavy industry on the +x edge (downwind), civic at the centre,
-housing opposite the industry, docks along the waterfront edge.
+Roads are spaced evenly across the bounds (no degenerate end blocks), and
+district zoning follows the director's requested shares: each requested kind
+gets a number of blocks proportional to its share, placed by suitability —
+docks on the waterfront edge, heavy industry on the +x (downwind) edge,
+rail yard and warehouses buffering it, civic at the centre, housing furthest
+from the smoke.
 """
 from __future__ import annotations
 
@@ -28,6 +32,57 @@ LANDMARK_MAP = {
     "city_hall": ("civic", "civic_hall"),
 }
 
+# Assignment priority: edge-bound kinds claim their blocks first.
+_KIND_PRIORITY = ["docks", "heavy_industry", "rail_yard", "warehouses",
+                  "civic", "housing"]
+
+
+def _road_positions(lo: int, hi: int) -> list[int]:
+    """Evenly spaced road x/z start positions across [lo, hi], first at lo and
+    last at hi-ROAD_W+1, with all blocks between roads near-equal width (no
+    degenerate slivers)."""
+    span = hi - lo + 1
+    n_blocks = max(1, round((span - ROAD_W) / PITCH))
+    return [lo + round(i * (span - ROAD_W) / n_blocks) for i in range(n_blocks + 1)]
+
+
+def _share_targets(districts: list[dict], total: int) -> dict[str, int]:
+    """Largest-remainder apportionment of `total` blocks over requested shares,
+    guaranteeing every requested kind at least one block while blocks last."""
+    kinds = [d["type"] for d in districts]
+    shares = {d["type"]: d["share"] for d in districts}
+    targets = {k: int(shares[k] * total) for k in kinds}
+    remainders = sorted(kinds, key=lambda k: shares[k] * total - targets[k], reverse=True)
+    short = total - sum(targets.values())
+    for k in remainders[:short]:
+        targets[k] += 1
+    # every requested kind gets at least 1 block while supply allows
+    if total >= len(kinds):
+        for k in kinds:
+            if targets[k] == 0:
+                donor = max(kinds, key=lambda d: targets[d])
+                if targets[donor] > 1:
+                    targets[donor] -= 1
+                    targets[k] = 1
+    return targets
+
+
+def _suitability(kind: str, bi: int, bj: int, cols: int, rows: int) -> float:
+    """Higher = better block for this kind. Ties broken by (bi, bj) in the
+    greedy sort, so allocation stays deterministic."""
+    cx, cz = (cols - 1) / 2, (rows - 1) / 2
+    if kind == "docks":
+        return bj                      # waterfront = south edge
+    if kind == "heavy_industry":
+        return bi                      # downwind = +x edge
+    if kind == "rail_yard":
+        return bi - abs(bj - cz) * 0.1  # east, mid-depth
+    if kind == "warehouses":
+        return bi * 0.5 - abs(bj - cz) * 0.1  # buffer east of centre
+    if kind == "civic":
+        return -(abs(bi - cx) + abs(bj - cz))  # centre
+    return -bi                         # housing: far from industry
+
 
 def plan_city(city_brief, origin: dict, *, seed: int) -> CityPlan:
     rng = random.Random(seed)
@@ -37,12 +92,8 @@ def plan_city(city_brief, origin: dict, *, seed: int) -> CityPlan:
     plan = CityPlan(bounds=bounds, ground_y=oy)
 
     # ── road grid ────────────────────────────────────────────────────────────
-    xr = list(range(bounds.x1, bounds.x2 - ROAD_W + 2, PITCH))
-    zr = list(range(bounds.z1, bounds.z2 - ROAD_W + 2, PITCH))
-    if xr[-1] != bounds.x2 - ROAD_W + 1:
-        xr.append(bounds.x2 - ROAD_W + 1)
-    if zr[-1] != bounds.z2 - ROAD_W + 1:
-        zr.append(bounds.z2 - ROAD_W + 1)
+    xr = _road_positions(bounds.x1, bounds.x2)
+    zr = _road_positions(bounds.z1, bounds.z2)
 
     roads = RoadGraph()
     for z in zr:
@@ -58,39 +109,54 @@ def plan_city(city_brief, origin: dict, *, seed: int) -> CityPlan:
     if city_brief.waterfront:
         plan.canal = [Rect(bounds.x1, bounds.z2 - 7, bounds.x2, bounds.z2)]
 
-    # ── blocks -> lots -> districts ──────────────────────────────────────────
+    # ── blocks ───────────────────────────────────────────────────────────────
     cols, rows = len(xr) - 1, len(zr) - 1
-    by_kind: dict[str, District] = {}
-    center = (cols // 2, rows // 2)
-
+    blocks: list[tuple[int, int, Rect]] = []
     for bi in range(cols):
         for bj in range(rows):
             bx1, bx2 = xr[bi] + ROAD_W, xr[bi + 1] - 1
             bz1, bz2 = zr[bj] + ROAD_W, zr[bj + 1] - 1
             if bx2 - bx1 < 5 or bz2 - bz1 < 5:
                 continue
-            kind = _zone(bi, bj, cols, rows, center, city_brief.waterfront)
-            lot = Lot(rect=Rect(bx1 + SETBACK, bz1 + SETBACK, bx2 - SETBACK, bz2 - SETBACK),
-                      district_kind=kind, faces_road="N")
-            dist = by_kind.setdefault(kind, District(kind=kind))
-            dist.region.append(Rect(bx1, bz1, bx2, bz2))
-            dist.lots.append(lot)
+            blocks.append((bi, bj, Rect(bx1, bz1, bx2, bz2)))
+
+    # ── share-driven zoning ──────────────────────────────────────────────────
+    districts = list(city_brief.districts) or [{"type": "housing", "share": 1.0}]
+    requested = {d["type"] for d in districts}
+    # docks only make sense on a waterfront
+    if not city_brief.waterfront:
+        districts = [d for d in districts if d["type"] != "docks"] or districts
+        requested = {d["type"] for d in districts}
+    targets = _share_targets(districts, len(blocks))
+
+    fallback = max(districts, key=lambda d: d["share"])["type"]
+    assignment: dict[tuple[int, int], str] = {}
+    unassigned = {(bi, bj) for bi, bj, _ in blocks}
+    for kind in _KIND_PRIORITY:
+        if kind not in requested:
+            continue
+        want = targets.get(kind, 0)
+        ranked = sorted(unassigned,
+                        key=lambda b: (-_suitability(kind, b[0], b[1], cols, rows), b))
+        for b in ranked[:want]:
+            assignment[b] = kind
+            unassigned.discard(b)
+    for b in unassigned:  # rounding leftovers
+        assignment[b] = fallback
+
+    by_kind: dict[str, District] = {}
+    for bi, bj, rect in blocks:
+        kind = assignment[(bi, bj)]
+        lot = Lot(rect=Rect(rect.x1 + SETBACK, rect.z1 + SETBACK,
+                            rect.x2 - SETBACK, rect.z2 - SETBACK),
+                  district_kind=kind, faces_road="N")
+        dist = by_kind.setdefault(kind, District(kind=kind))
+        dist.region.append(rect)
+        dist.lots.append(lot)
 
     plan.districts = list(by_kind.values())
     _assign_landmarks(plan, city_brief, rng)
     return plan
-
-
-def _zone(bi, bj, cols, rows, center, waterfront) -> str:
-    if waterfront and bj == rows - 1:
-        return "docks"
-    if (bi, bj) == center:
-        return "civic"
-    if bi >= cols - 1:
-        return "heavy_industry"
-    if bi >= cols - 2:
-        return "warehouses"
-    return "housing"
 
 
 def _assign_landmarks(plan: CityPlan, city_brief, rng) -> None:

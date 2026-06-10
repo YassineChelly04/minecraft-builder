@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
   <title>Builder Studio — Minecraft Architect</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232F6BFF' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2.7 20.4 7.6v9.8L12 22.3 3.6 17.4V7.6Z'/%3E%3Cpath d='M3.6 7.6 12 12.5l8.4-4.9'/%3E%3Cpath d='M12 12.5v9.8'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    /* ════════════════════════════════════════════════════════════
+       Builder Studio — Editorial theme, light + dark
+       type scale: 11 / 12 / 13 / 14 / 16 / 22 / 28   space: 4px grid
+       ════════════════════════════════════════════════════════════ */
     :root {
       --paper:   #FAFAF8;
       --panel:   #FFFFFF;
@@ -16,22 +22,53 @@
       --line:    #E4E3DD;
       --line-2:  #D6D5CE;
       --ink:     #16181D;
+      --ink-2:   #2A2D36;
       --muted:   #6B6F76;
       --faint:   #9CA0A6;
       --accent:  #2F6BFF;
       --accent-d:#1F54E0;
       --accent-soft:#EAF0FF;
+      --violet:  #7C5CFC;
       --good:    #1A8A3C;
       --good-soft:#E7F4EA;
       --bad:     #D6314A;
       --bad-soft:#FBEAED;
       --warn:    #9A6700;
       --warn-soft:#FBF3DD;
+      --veil:    rgba(22,24,29,0.34);
       --r:   8px;  --r-lg: 14px;  --r-pill: 999px;
-      --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --font:  'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --mono:  'JetBrains Mono', 'SF Mono', Consolas, monospace;
       --shadow-sm: 0 1px 2px rgba(22,24,29,0.04), 0 1px 1px rgba(22,24,29,0.03);
       --shadow:    0 6px 24px -10px rgba(22,24,29,0.16);
+      --shadow-lg: 0 24px 64px -24px rgba(22,24,29,0.28);
+    }
+    [data-theme="dark"] {
+      --paper:   #101216;
+      --panel:   #16181D;
+      --inset:   #1C1F25;
+      --inset-2: #23262E;
+      --line:    #262A31;
+      --line-2:  #343943;
+      --ink:     #E9E7E2;
+      --ink-2:   #C9CCD2;
+      --muted:   #9BA0A8;
+      --faint:   #686D77;
+      --accent:  #5B8CFF;
+      --accent-d:#7AA2FF;
+      --accent-soft: rgba(91,140,255,0.16);
+      --violet:  #9B82FF;
+      --good:    #4CC472;
+      --good-soft: rgba(76,196,114,0.13);
+      --bad:     #F2657E;
+      --bad-soft: rgba(242,101,126,0.13);
+      --warn:    #D9A53C;
+      --warn-soft: rgba(217,165,60,0.13);
+      --veil:    rgba(5,6,8,0.55);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow:    0 6px 24px -10px rgba(0,0,0,0.5);
+      --shadow-lg: 0 24px 64px -24px rgba(0,0,0,0.65);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -39,68 +76,104 @@
       background: var(--paper); color: var(--ink); font-family: var(--font);
       -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
       display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-      font-size: 14px;
+      font-size: 14px; transition: background 0.25s, color 0.25s;
     }
     ::selection { background: var(--accent-soft); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+    button { font-family: inherit; }
+
+    /* icons — every glyph drawn in-house on a 24px grid, 1.8 stroke, round */
+    .ic { width: 15px; height: 15px; stroke: currentColor; fill: none;
+          stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .ic-sm { width: 13px; height: 13px; }
+    .ic-lg { width: 18px; height: 18px; }
 
     /* ── Top bar ─────────────────────────────────────────────── */
     .topbar {
-      display: flex; align-items: center; gap: 18px;
+      display: flex; align-items: center; gap: 16px;
       padding: 0 24px; height: 60px; flex-shrink: 0;
       border-bottom: 1px solid var(--line); background: var(--panel);
     }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand .mark {
-      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
       background: var(--ink); color: var(--paper);
-      display: grid; place-items: center; font-weight: 800; font-size: 15px;
-      letter-spacing: -0.02em;
+      display: grid; place-items: center;
     }
-    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
-    .brand .tag { font-size: 11px; color: var(--faint); font-weight: 500; letter-spacing: 0.02em; }
+    [data-theme="dark"] .brand .mark { background: var(--accent-soft); color: var(--accent); }
+    .brand .mark .ic { width: 18px; height: 18px; stroke-width: 1.6; }
+    .brand h1 { font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.05; }
+    .brand .tag { font-family: var(--mono); font-size: 9.5px; color: var(--faint); font-weight: 500;
+                  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 2px; }
     .grow { flex: 1; }
 
-    .seg { display: inline-flex; background: var(--inset); border: 1px solid var(--line); border-radius: var(--r); padding: 2px; }
+    .seg { display: inline-flex; background: var(--inset); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
     .seg button {
-      font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted);
-      background: transparent; border: 0; padding: 6px 13px; border-radius: 6px;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 600; color: var(--muted);
+      background: transparent; border: 0; padding: 6px 12px; border-radius: 8px;
       cursor: pointer; transition: all 0.14s; letter-spacing: -0.01em;
     }
+    .seg button .ic { width: 13.5px; height: 13.5px; opacity: 0.75; }
     .seg button.on { background: var(--panel); color: var(--ink); box-shadow: var(--shadow-sm); }
+    .seg button.on .ic { opacity: 1; color: var(--accent); }
     .seg button:hover:not(.on) { color: var(--ink); }
 
     .field-inline { display: flex; align-items: center; gap: 8px; }
-    .field-inline label { font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
+    .field-inline label { font-size: 10.5px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
     select.mini {
       font-family: var(--mono); font-size: 12.5px; color: var(--ink); font-weight: 500;
       background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r);
-      padding: 6px 28px 6px 11px; cursor: pointer; outline: none;
-      appearance: none;
+      padding: 6px 28px 6px 11px; cursor: pointer; outline: none; appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%236B6F76' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 9px center;
     }
     select.mini:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
+    .exec-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600;
+                  color: var(--muted); background: var(--inset); border: 1px solid var(--line);
+                  border-radius: var(--r-pill); padding: 5px 12px; cursor: default; }
+    .exec-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+    .exec-badge.rcon { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, transparent); background: var(--good-soft); }
+    .exec-badge.rcon .dot { background: var(--good); }
+
+    .theme-btn { width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--r);
+                 border: 1px solid var(--line-2); background: var(--panel); color: var(--muted); cursor: pointer;
+                 transition: all 0.14s; }
+    .theme-btn:hover { color: var(--ink); border-color: var(--faint); }
+
     /* ── Layout ──────────────────────────────────────────────── */
-    .main { display: grid; grid-template-columns: 400px 1fr; flex: 1; overflow: hidden; }
+    .main { display: grid; grid-template-columns: 404px 1fr; flex: 1; overflow: hidden; }
     .panel { border-right: 1px solid var(--line); background: var(--panel);
-             padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
+             padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
     .workspace { display: flex; flex-direction: column; overflow: hidden; background: var(--paper); }
+    @media (max-width: 1000px) {
+      body { overflow: auto; height: auto; }
+      .main { grid-template-columns: 1fr; }
+      .panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .workspace { min-height: 70vh; }
+      .topbar { flex-wrap: wrap; height: auto; padding: 12px 16px; }
+    }
 
     /* ── Stepper ─────────────────────────────────────────────── */
     .steps { display: flex; gap: 4px; }
     .stp { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-    .stp .ix { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--faint); letter-spacing: 0.02em; }
+    .stp .ix { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--faint);
+               letter-spacing: 0.02em; display: flex; align-items: center; gap: 4px; height: 14px; }
+    .stp .ix .ic { display: none; width: 12px; height: 12px; color: var(--good); }
+    .stp.done .ix .ic { display: inline; } .stp.done .ix .n { display: none; }
     .stp .nm { font-size: 12.5px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
     .stp .rule { height: 2px; background: var(--line); border-radius: 2px; transition: background 0.25s; }
-    .stp.done .ix, .stp.done .nm { color: var(--ink); }
+    .stp.done .nm { color: var(--ink); }
     .stp.done .rule { background: var(--line-2); }
     .stp.active .ix { color: var(--accent); }
     .stp.active .nm { color: var(--ink); }
     .stp.active .rule { background: var(--accent); }
 
     /* ── Form ────────────────────────────────────────────────── */
-    .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 9px; display: block; }
+    .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+           color: var(--muted); margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+    .lbl .ic { width: 12.5px; height: 12.5px; color: var(--faint); }
     textarea, input[type=number] {
       width: 100%; background: var(--panel); border: 1px solid var(--line-2);
       border-radius: var(--r); color: var(--ink); font-family: inherit; font-size: 14px;
@@ -115,9 +188,9 @@
     .coord input { font-family: var(--mono); font-size: 13px; padding: 9px 11px; }
 
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       padding: 12px 18px; border: 1px solid transparent; border-radius: var(--r);
-      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-size: 14px; font-weight: 600; cursor: pointer;
       transition: background 0.14s, border-color 0.14s, transform 0.06s, opacity 0.14s;
       width: 100%; letter-spacing: -0.01em;
     }
@@ -125,15 +198,16 @@
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-d); }
+    [data-theme="dark"] .btn-primary { color: #0d1117; }
     .btn-dark { background: var(--ink); color: var(--paper); }
-    .btn-dark:hover:not(:disabled) { background: #2a2d36; }
+    .btn-dark:hover:not(:disabled) { background: var(--ink-2); }
     .btn-ghost { background: var(--panel); border-color: var(--line-2); color: var(--muted); }
     .btn-ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--faint); }
     .btn-row { display: flex; gap: 8px; }
     .arrow { transition: transform 0.15s; } .btn:hover:not(:disabled) .arrow { transform: translateX(2px); }
 
     .spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
-    .btn-ghost .spin, .btn-primary .spin { border-color: rgba(0,0,0,0.18); border-top-color: currentColor; }
+    .btn-ghost .spin, .btn-primary .spin, .btn-dark .spin { border-color: rgba(127,127,127,0.3); border-top-color: currentColor; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Cards ───────────────────────────────────────────────── */
@@ -141,21 +215,30 @@
             padding: 16px; display: none; animation: rise 0.28s ease; box-shadow: var(--shadow-sm); }
     .card.show { display: block; }
     @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    .card-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 11px; display: flex; align-items: center; gap: 8px; }
-    .card-h .k { width: 5px; height: 14px; border-radius: 2px; background: var(--accent); }
-    .card-h.violet .k { background: #7C5CFC; } .card-h.amber .k { background: var(--warn); }
+    .card-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+              color: var(--muted); margin-bottom: 11px; display: flex; align-items: center; gap: 7px; }
+    .card-h .ic { width: 13px; height: 13px; color: var(--accent); }
+    .card-h.violet .ic { color: var(--violet); } .card-h.amber .ic { color: var(--warn); }
+    .card-h .right { margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+                     color: var(--faint); text-transform: none; letter-spacing: 0; }
+    .concept { font-family: var(--serif); font-size: 19px; font-weight: 600; font-style: italic;
+               letter-spacing: -0.01em; line-height: 1.25; margin-bottom: 8px; }
     .prose { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
     .assumptions { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
     .assumptions .a { font-size: 12.5px; color: var(--muted); line-height: 1.75; display: flex; gap: 8px; }
     .assumptions .a::before { content: '—'; color: var(--accent); font-weight: 700; }
 
     .question { margin-bottom: 16px; } .question:last-child { margin-bottom: 0; }
-    .q-text { font-size: 13.5px; font-weight: 600; margin-bottom: 9px; line-height: 1.45; }
+    .q-text { font-size: 13.5px; font-weight: 600; margin-bottom: 9px; line-height: 1.45; display: flex; gap: 8px; }
+    .q-text .qn { font-family: var(--mono); font-size: 11px; color: var(--faint); font-weight: 600; padding-top: 2px; }
     .options { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
-    .opt { font-size: 12.5px; padding: 6px 12px; border-radius: var(--r-pill); cursor: pointer;
-           background: var(--inset); border: 1px solid var(--line-2); color: var(--muted); transition: all 0.12s; user-select: none; }
+    .opt { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 6px 12px;
+           border-radius: var(--r-pill); cursor: pointer; border: 1px solid var(--line-2);
+           background: var(--inset); color: var(--muted); transition: all 0.12s; user-select: none; }
+    .opt .ic { width: 11px; height: 11px; display: none; }
     .opt:hover { border-color: var(--faint); color: var(--ink); }
     .opt.sel { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-d); font-weight: 600; }
+    .opt.sel .ic { display: inline; }
     .q-custom { width: 100%; background: var(--inset); border: 1px solid var(--line-2); border-radius: var(--r);
                 color: var(--ink); font-family: inherit; font-size: 13px; padding: 8px 11px; outline: none; }
     .q-custom:focus { border-color: var(--accent); }
@@ -166,32 +249,62 @@
     .kv .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
     .kv .v { color: var(--ink); font-family: var(--mono); font-size: 12.5px; word-break: break-word; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .chips .c { font-size: 11.5px; padding: 3px 9px; border-radius: var(--r-pill); background: var(--inset); border: 1px solid var(--line-2); color: var(--muted); font-weight: 500; }
+    .chips .c { font-size: 11.5px; padding: 3px 9px; border-radius: var(--r-pill); background: var(--inset);
+                border: 1px solid var(--line-2); color: var(--muted); font-weight: 500; }
 
-    .score { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-    .score b { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--good); letter-spacing: -0.02em; }
-    .score small { font-size: 12px; color: var(--faint); }
+    /* score gauge */
+    .score { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
+    .ring .rbg { fill: none; stroke: var(--inset-2); stroke-width: 4.5; }
+    .ring .rfg { fill: none; stroke: var(--good); stroke-width: 4.5; stroke-linecap: round;
+                 stroke-dasharray: 125.7; stroke-dashoffset: 125.7; transition: stroke-dashoffset 0.9s cubic-bezier(.2,.8,.2,1), stroke 0.3s; }
+    .score b { font-family: var(--serif); font-size: 27px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+    .score small { font-size: 11.5px; color: var(--faint); display: block; margin-top: 3px; }
+
+    .qa { display: flex; flex-direction: column; gap: 7px; }
+    .qa-row { display: grid; grid-template-columns: 92px 1fr 30px; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+    .qa-row .qa-track { height: 5px; border-radius: 3px; background: var(--inset-2); overflow: hidden; }
+    .qa-row .qa-track i { display: block; height: 100%; border-radius: 3px; transition: width 0.7s ease; }
+    .qa-row b { font-family: var(--mono); font-size: 11.5px; color: var(--ink); font-weight: 600; text-align: right; }
 
     .hint { color: var(--faint); font-size: 12px; line-height: 1.7; }
     .hint b { color: var(--muted); font-weight: 600; }
+    kbd { font-family: var(--mono); font-size: 10.5px; background: var(--inset); border: 1px solid var(--line-2);
+          border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--muted); }
+
+    /* placement progress */
+    .pp-track { height: 6px; border-radius: 3px; background: var(--inset-2); overflow: hidden; }
+    .pp-track i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--accent); transition: width 0.4s ease; }
 
     /* ── Workspace toolbar ───────────────────────────────────── */
-    .ws-top { display: flex; align-items: center; gap: 0; height: 50px; flex-shrink: 0;
-              border-bottom: 1px solid var(--line); padding: 0 8px 0 16px; background: var(--panel); }
-    .tabs { display: flex; gap: 2px; flex: 1; }
-    .tab { padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--faint); cursor: pointer;
-           border-radius: var(--r); transition: all 0.13s; display: flex; align-items: center; gap: 8px; letter-spacing: -0.01em; }
+    .ws-top { display: flex; align-items: center; gap: 10px; height: 50px; flex-shrink: 0;
+              border-bottom: 1px solid var(--line); padding: 0 12px 0 16px; background: var(--panel); }
+    .tabs { display: flex; gap: 2px; }
+    .tab { display: flex; align-items: center; gap: 7px; padding: 8px 13px; font-size: 13px; font-weight: 600;
+           color: var(--faint); cursor: pointer; border: 0; background: transparent;
+           border-radius: var(--r); transition: all 0.13s; letter-spacing: -0.01em; }
+    .tab .ic { width: 13.5px; height: 13.5px; }
     .tab:hover { color: var(--ink); background: var(--inset); }
     .tab.on { color: var(--ink); background: var(--inset); }
-    .tab .ct { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--inset-2); color: var(--muted); font-weight: 600; }
+    .tab .ct { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: var(--r-pill);
+               background: var(--inset-2); color: var(--muted); font-weight: 600; }
     .tab.on .ct { background: var(--accent); color: #fff; }
+    [data-theme="dark"] .tab.on .ct { color: #0d1117; }
+
+    .filter { position: relative; flex: 1; max-width: 300px; margin-left: auto; }
+    .filter .ic { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--faint); pointer-events: none; }
+    .filter input { width: 100%; font-family: var(--mono); font-size: 12px; color: var(--ink);
+                    background: var(--inset); border: 1px solid var(--line); border-radius: var(--r);
+                    padding: 7px 10px 7px 30px; outline: none; transition: all 0.15s; }
+    .filter input:focus { background: var(--panel); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .filter input::placeholder { color: var(--faint); }
+
     .ws-actions { display: flex; gap: 7px; }
-    .icon-btn { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+    .icon-btn { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
                 color: var(--muted); background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r);
-                padding: 7px 12px; cursor: pointer; transition: all 0.13s; }
+                padding: 7px 12px; cursor: pointer; transition: all 0.13s; white-space: nowrap; }
     .icon-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--faint); }
     .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .icon-btn svg { stroke: currentColor; }
 
     /* ── Pipeline strip ──────────────────────────────────────── */
     .flow { display: flex; align-items: center; gap: 0; padding: 11px 16px; border-bottom: 1px solid var(--line);
@@ -204,7 +317,7 @@
     .stg.run .node .d { background: var(--accent); animation: pulse 1s infinite; }
     .stg.ok .node { color: var(--good); border-color: var(--good); background: var(--good-soft); }
     .stg.ok .node .d { background: var(--good); }
-    .lnk { width: 18px; height: 2px; background: var(--line-2); margin: 0 4px; }
+    .lnk { width: 18px; height: 2px; background: var(--line-2); margin: 0 4px; flex-shrink: 0; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
     /* ── Progress bar ────────────────────────────────────────── */
@@ -216,75 +329,157 @@
     .progress-head .t { color: var(--muted); font-family: var(--mono); font-size: 11.5px; font-weight: 500; }
     .progress-track { height: 6px; border-radius: 3px; background: var(--inset-2); overflow: hidden; }
     .progress-track i { display: block; height: 100%; width: 0; border-radius: 3px;
-                        background: linear-gradient(90deg, var(--accent), #6ea0ff);
+                        background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #fff));
                         transition: width 0.25s ease; }
 
     /* ── Status + output ─────────────────────────────────────── */
     .ws-body { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; overflow: hidden; }
     .statusbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 26px; flex-shrink: 0; }
-    .pill { font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: var(--r-pill); letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 6px; }
+    .pill { font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: var(--r-pill);
+            letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 6px; }
+    .pill .ic { width: 12px; height: 12px; }
     .pill-ok { background: var(--good-soft); color: var(--good); }
     .pill-err { background: var(--bad-soft); color: var(--bad); }
-    .pill-fix { background: var(--accent-soft); color: var(--accent-d); cursor: pointer; }
+    .pill-fix { background: var(--accent-soft); color: var(--accent-d); cursor: pointer; border: 0; }
     .meta { color: var(--muted); font-size: 12.5px; }
     .meta b { color: var(--ink); font-weight: 600; }
 
-    /* token meter */
     .tok { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
     .tok .bar { width: 90px; height: 6px; border-radius: 3px; background: var(--inset-2); overflow: hidden; }
     .tok .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s; }
     .tok b { color: var(--ink); font-family: var(--mono); font-weight: 600; font-size: 12px; }
 
-    .errbox { background: var(--bad-soft); border: 1px solid rgba(214,49,74,0.25); border-radius: var(--r); padding: 10px 13px;
-              font-size: 12.5px; color: var(--bad); line-height: 1.7; display: none; flex-shrink: 0; max-height: 110px; overflow-y: auto; }
-    .fixbox { background: var(--accent-soft); border: 1px solid rgba(47,107,255,0.2); border-radius: var(--r); padding: 10px 13px;
-              font-size: 12px; color: var(--muted); line-height: 1.7; display: none; flex-shrink: 0; max-height: 150px; overflow-y: auto; font-family: var(--mono); }
+    .errbox { background: var(--bad-soft); border: 1px solid color-mix(in srgb, var(--bad) 25%, transparent);
+              border-radius: var(--r); padding: 10px 13px; font-size: 12.5px; color: var(--bad);
+              line-height: 1.7; display: none; flex-shrink: 0; max-height: 110px; overflow-y: auto; }
+    .fixbox { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+              border-radius: var(--r); padding: 10px 13px; font-size: 12px; color: var(--muted);
+              line-height: 1.7; display: none; flex-shrink: 0; max-height: 150px; overflow-y: auto; font-family: var(--mono); }
 
     .cmds { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
             overflow-y: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; box-shadow: var(--shadow-sm); }
     .group-h { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: var(--inset);
                border-bottom: 1px solid var(--line); position: sticky; top: 0; font-size: 10.5px; font-weight: 700;
-               text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); z-index: 1; }
+               text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); z-index: 1; font-family: var(--font); }
     .group-h .d { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-    .group-h.int .d { background: #7C5CFC; }
+    .group-h.int .d { background: var(--violet); }
     .crow { display: flex; align-items: baseline; gap: 12px; padding: 3px 16px; border-bottom: 1px solid var(--inset); }
     .crow:hover { background: var(--inset); }
-    .cn { color: var(--faint); font-size: 11px; min-width: 30px; text-align: right; user-select: none; }
-    .ct { color: var(--ink); word-break: break-all; }
+    .cn { color: var(--faint); font-size: 11px; min-width: 34px; text-align: right; user-select: none; }
+    .ct2 { color: var(--ink); word-break: break-all; }
     .k-fill { color: var(--accent-d); font-weight: 600; }
     .k-set { color: var(--warn); font-weight: 600; }
     .k-blk { color: var(--good); }
     .k-air { color: var(--faint); }
     .k-num { color: var(--muted); }
+    .more-row { padding: 10px 16px; color: var(--faint); font-size: 11.5px; font-family: var(--font); }
 
-    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px;
-             color: var(--faint); text-align: center;
+    /* skeleton shimmer while generating */
+    .skel { padding: 16px; display: flex; flex-direction: column; gap: 11px; }
+    .skel i { display: block; height: 12px; border-radius: 4px;
+              background: linear-gradient(90deg, var(--inset) 25%, var(--inset-2) 50%, var(--inset) 75%);
+              background-size: 200% 100%; animation: shimmer 1.3s infinite; }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+             gap: 8px; color: var(--faint); text-align: center; padding: 24px; font-family: var(--font);
              background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 22px 22px; }
-    .empty .e-t { font-size: 13px; font-weight: 600; color: var(--muted); }
-    .empty .e-s { font-size: 12px; max-width: 320px; line-height: 1.6; }
+    .empty .ghost { width: 44px; height: 44px; color: var(--line-2); stroke-width: 1.4; margin-bottom: 4px; }
+    .empty .e-t { font-family: var(--serif); font-size: 17px; font-weight: 600; color: var(--muted); }
+    .empty .e-s { font-size: 12.5px; max-width: 360px; line-height: 1.6; }
+    .samples { display: grid; grid-template-columns: repeat(2, minmax(190px, 230px)); gap: 8px; margin-top: 14px; }
+    .sample { display: flex; align-items: center; gap: 10px; text-align: left; padding: 10px 13px;
+              background: var(--panel); border: 1px solid var(--line-2); border-radius: 10px; cursor: pointer;
+              transition: all 0.14s; font-family: var(--font); }
+    .sample:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+    .sample .ic { width: 16px; height: 16px; color: var(--accent); }
+    .sample .s-t { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+    .sample .s-m { font-size: 10.5px; color: var(--faint); margin-top: 1px; }
+    .empty .kbd-hint { margin-top: 14px; font-size: 11.5px; }
+    @media (max-width: 560px) { .samples { grid-template-columns: 1fr; } }
 
-    /* ── Overlay + toast ─────────────────────────────────────── */
-    .overlay { position: fixed; inset: 0; background: rgba(250,250,248,0.94); backdrop-filter: blur(4px);
-               display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 100; }
-    .overlay .big { font-size: 5.5rem; font-weight: 800; color: var(--accent); line-height: 1; font-family: var(--mono); }
+    /* ── Overlay, modal, toasts ──────────────────────────────── */
+    .overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--paper) 94%, transparent);
+               backdrop-filter: blur(4px); display: none; flex-direction: column; align-items: center;
+               justify-content: center; gap: 14px; z-index: 100; }
+    .overlay .big { font-family: var(--serif); font-size: 5.5rem; font-weight: 600; color: var(--accent); line-height: 1; }
     .overlay .m { font-size: 1.05rem; font-weight: 600; } .overlay .s { font-size: 0.85rem; color: var(--muted); }
-    .toast { position: fixed; bottom: 22px; right: 22px; background: var(--panel); border: 1px solid var(--line-2);
-             border-radius: var(--r); padding: 12px 16px; font-size: 13px; box-shadow: var(--shadow);
-             transform: translateY(60px); opacity: 0; transition: all 0.28s cubic-bezier(.2,.8,.2,1); z-index: 200; max-width: 340px; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.success { border-left: 3px solid var(--good); }
-    .toast.error { border-left: 3px solid var(--bad); }
+
+    .veil { position: fixed; inset: 0; background: var(--veil); display: none; place-items: center;
+            z-index: 150; backdrop-filter: blur(2px); }
+    .veil.show { display: grid; }
+    .modal { width: min(460px, calc(100vw - 48px)); background: var(--panel); border: 1px solid var(--line);
+             border-radius: 16px; padding: 22px; box-shadow: var(--shadow-lg); animation: rise 0.22s ease; }
+    .modal .m-ico { width: 38px; height: 38px; border-radius: 10px; background: var(--warn-soft); color: var(--warn);
+                    display: grid; place-items: center; margin-bottom: 13px; }
+    .modal .m-ico .ic { width: 19px; height: 19px; }
+    .modal h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .modal p { font-size: 13px; line-height: 1.65; color: var(--muted); margin-bottom: 18px; }
+    .modal p b { color: var(--ink); }
+    .modal .m-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal .m-actions .btn { width: auto; padding: 9px 16px; font-size: 13px; }
+
+    .toasts { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 200; }
+    .toast { display: flex; align-items: flex-start; gap: 10px; background: var(--panel); border: 1px solid var(--line-2);
+             border-radius: 10px; padding: 12px 15px; font-size: 13px; box-shadow: var(--shadow);
+             max-width: 360px; animation: toastIn 0.28s cubic-bezier(.2,.8,.2,1); line-height: 1.5; }
+    .toast.out { animation: toastOut 0.25s ease forwards; }
+    .toast .ic { width: 15px; height: 15px; margin-top: 1.5px; }
+    .toast.success .ic { color: var(--good); }
+    .toast.error .ic { color: var(--bad); }
+    .toast.info .ic { color: var(--accent); }
+    @keyframes toastIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes toastOut { to { transform: translateY(8px); opacity: 0; } }
 
     ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 10px; border: 2px solid var(--paper); }
     ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
 
+<!-- ── Icon set: drawn in-house, 24px grid, 1.8 stroke, round joins ── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.7 20.4 7.6v9.8L12 22.3 3.6 17.4V7.6Z"/><path d="M3.6 7.6 12 12.5l8.4-4.9"/><path d="M12 12.5v9.8"/></symbol>
+    <symbol id="i-house" viewBox="0 0 24 24"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.8 9.6V20.2h12.4V9.6"/><path d="M10 20.2v-4.6h4v4.6"/></symbol>
+    <symbol id="i-city" viewBox="0 0 24 24"><path d="M3.2 20.5h17.6"/><path d="M5 20.5v-8.3h4v8.3"/><path d="M9 20.5V4.8h5.4v15.7"/><path d="M14.4 20.5V10h4.4v10.5"/><path d="M11 8.2h1.4M11 11.2h1.4M11 14.2h1.4"/></symbol>
+    <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 20.5h18"/><path d="M4.6 20.5v-10l3.9-2.9 3.9 2.9 3.9-2.9 3.9 2.9v10"/><path d="M10.6 20.5v-4h2.8v4"/><path d="M16.6 7.6V4.4h2.2v4.8"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.6V12l3 1.8"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 4.8c.45 3.3 2.2 5.05 5.5 5.5-3.3.45-5.05 2.2-5.5 5.5-.45-3.3-2.2-5.05-5.5-5.5 3.3-.45 5.05-2.2 5.5-5.5Z"/><path d="M18.5 14.5c.25 1.85 1.25 2.85 3.1 3.1-1.85.25-2.85 1.25-3.1 3.1-.25-1.85-1.25-2.85-3.1-3.1 1.85-.25 2.85-1.25 3.1-3.1Z"/></symbol>
+    <symbol id="i-hammer" viewBox="0 0 24 24"><path d="m13.3 5 5.7 5.7-2.3 2.3-5.7-5.7 2.3-2.3Z"/><path d="M11.6 8 4.3 15.3l2.7 2.7 7.3-7.3"/><path d="m15.6 2.7 2.3 2.3M18.7 13l2.3 2.3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.5 5.8v12.4L19 12 8.5 5.8Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.8v12.4M15.5 5.8v12.4"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11M7.2 9.7l4.8 4.8 4.8-4.8"/><path d="M4.5 20.5h15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.6 21.4 19.8H2.6L12 3.6Z"/><path d="M12 9.8v4.2M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.2s-6.6-5.5-6.6-10.1A6.6 6.6 0 0 1 12 4.4a6.6 6.6 0 0 1 6.6 6.7c0 4.6-6.6 10.1-6.6 10.1Z"/><circle cx="12" cy="11" r="2.3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.2"/><path d="m15.3 15.3 4.7 4.7"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8V5M12 19v2.2M2.8 12H5M19 12h2.2M5.5 5.5l1.6 1.6M16.9 16.9l1.6 1.6M18.5 5.5l-1.6 1.6M7.1 16.9l-1.6 1.6"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4 6.8 6.8 0 0 0 20 13.4Z"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2.8 4.8 13.4h6L11 21.2l8.2-10.6h-6L13 2.8Z"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M6.5 10.5h.01M9.5 10.5h.01M12.5 10.5h.01M15.5 10.5h.01M17.5 14.5h.01M7 14.5h7.5"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M4.5 12h15M14 6.5l5.5 5.5L14 17.5"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M5.2 18.8 14.8 9.2"/><path d="M17.4 3.4c.25 1.85 1.25 2.85 3.1 3.1-1.85.25-2.85 1.25-3.1 3.1-.25-1.85-1.25-2.85-3.1-3.1 1.85-.25 2.85-1.25 3.1-3.1Z"/><path d="M5.5 5.5v3M4 7h3"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.8 21 8.5l-9 4.7-9-4.7 9-4.7Z"/><path d="m3 13.2 9 4.7 9-4.7"/></symbol>
+    <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M8 4.5h8l2.6 6.2H5.4L8 4.5Z"/><path d="M12 10.7V19"/><path d="M8.4 19h7.2"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 16.8a8.2 8.2 0 1 1 15 0"/><path d="m12 13.6 3.6-3.6"/></symbol>
+    <symbol id="i-question" viewBox="0 0 24 24"><path d="M8.6 9.2a3.4 3.4 0 1 1 5.2 2.9c-1 .65-1.8 1.25-1.8 2.5"/><path d="M12 18.3h.01"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4"/></symbol>
+  </defs>
+</svg>
+
 <div class="topbar">
   <div class="brand">
-    <div class="mark">B</div>
+    <div class="mark"><svg class="ic"><use href="#i-cube"/></svg></div>
     <div>
       <h1>Builder Studio</h1>
       <div class="tag">Minecraft Architect</div>
@@ -293,11 +488,11 @@
   <div class="grow"></div>
   <div class="field-inline">
     <label>Engine</label>
-    <div class="seg" id="modeSeg">
-      <button class="on" data-mode="dsl" onclick="setMode('dsl')">Shell 2.0</button>
-      <button data-mode="city" onclick="setMode('city')">City</button>
-      <button data-mode="factory" onclick="setMode('factory')">Factory</button>
-      <button data-mode="legacy" onclick="setMode('legacy')">Legacy</button>
+    <div class="seg" id="modeSeg" role="tablist">
+      <button class="on" data-mode="dsl" onclick="setMode('dsl')"><svg class="ic"><use href="#i-house"/></svg>Shell 2.0</button>
+      <button data-mode="city" onclick="setMode('city')"><svg class="ic"><use href="#i-city"/></svg>City</button>
+      <button data-mode="factory" onclick="setMode('factory')"><svg class="ic"><use href="#i-factory"/></svg>Factory</button>
+      <button data-mode="legacy" onclick="setMode('legacy')"><svg class="ic"><use href="#i-clock"/></svg>Legacy</button>
     </div>
   </div>
   <div class="field-inline">
@@ -311,87 +506,107 @@
       <option value="26.2">26.2 (preview)</option>
     </select>
   </div>
+  <div class="exec-badge" id="execBadge" title="How 'Place in Minecraft' will run. Set RCON_PASSWORD to place over RCON (no window focus, ~150 cmd/s).">
+    <span class="dot"></span><svg class="ic ic-sm" id="execIco"><use href="#i-keyboard"/></svg><span id="execLblTop">Keyboard · 12/s</span>
+  </div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle theme">
+    <svg class="ic"><use id="themeIco" href="#i-moon"/></svg>
+  </button>
 </div>
 
 <div class="main">
   <!-- ── CONTROL PANEL ─────────────────────────────────── -->
   <div class="panel">
     <div class="steps" id="steps">
-      <div class="stp active" data-step="1"><span class="ix">01</span><span class="nm">Prompt</span><span class="rule"></span></div>
-      <div class="stp" data-step="2"><span class="ix">02</span><span class="nm">Plan</span><span class="rule"></span></div>
-      <div class="stp" data-step="3"><span class="ix">03</span><span class="nm">Build</span><span class="rule"></span></div>
-      <div class="stp" data-step="4"><span class="ix">04</span><span class="nm">Place</span><span class="rule"></span></div>
+      <div class="stp active" data-step="1"><span class="ix"><svg class="ic"><use href="#i-check"/></svg><span class="n">01</span></span><span class="nm">Prompt</span><span class="rule"></span></div>
+      <div class="stp" data-step="2"><span class="ix"><svg class="ic"><use href="#i-check"/></svg><span class="n">02</span></span><span class="nm">Plan</span><span class="rule"></span></div>
+      <div class="stp" data-step="3"><span class="ix"><svg class="ic"><use href="#i-check"/></svg><span class="n">03</span></span><span class="nm">Build</span><span class="rule"></span></div>
+      <div class="stp" data-step="4"><span class="ix"><svg class="ic"><use href="#i-check"/></svg><span class="n">04</span></span><span class="nm">Place</span><span class="rule"></span></div>
     </div>
 
     <div>
-      <span class="lbl">Describe your build</span>
+      <span class="lbl"><svg class="ic"><use href="#i-spark"/></svg>Describe your build</span>
       <textarea id="prompt" placeholder="A cozy medieval stone cottage with a fireplace, a small library, and a bedroom — warm lantern light throughout."></textarea>
     </div>
 
     <div>
-      <span class="lbl">Origin</span>
+      <span class="lbl"><svg class="ic"><use href="#i-pin"/></svg>Origin</span>
       <div class="coords">
-        <div class="coord"><label>x</label><input type="number" id="ox" value="0" /></div>
-        <div class="coord"><label>y</label><input type="number" id="oy" value="64" /></div>
-        <div class="coord"><label>z</label><input type="number" id="oz" value="0" /></div>
+        <div class="coord"><label for="ox">x</label><input type="number" id="ox" value="0" /></div>
+        <div class="coord"><label for="oy">y</label><input type="number" id="oy" value="64" /></div>
+        <div class="coord"><label for="oz">z</label><input type="number" id="oz" value="0" /></div>
       </div>
     </div>
 
     <button class="btn btn-dark" id="btnPlan" onclick="plan()">
       <span id="planSpin" style="display:none" class="spin"></span>
+      <svg class="ic"><use href="#i-spark"/></svg>
       <span id="planLbl">Brainstorm &amp; plan</span>
       <span class="arrow">→</span>
     </button>
 
     <div class="card" id="briefCard">
-      <div class="card-h"><span class="k"></span>Design brief</div>
+      <div class="card-h"><svg class="ic"><use href="#i-spark"/></svg>Design brief</div>
+      <div class="concept" id="conceptName" style="display:none"></div>
       <div class="prose" id="briefText"></div>
       <div class="assumptions" id="assumptionsBox" style="display:none"></div>
     </div>
 
     <div class="card" id="questionsCard">
-      <div class="card-h"><span class="k"></span>A few decisions</div>
+      <div class="card-h"><svg class="ic"><use href="#i-question"/></svg>A few decisions<span class="right" id="qCount"></span></div>
       <div id="questionsBox"></div>
       <label class="check">
         <input type="checkbox" id="refine" />
+        <svg class="ic" style="color:var(--faint)"><use href="#i-wand"/></svg>
         Run refinement pass <span style="color:var(--faint)">· interior agent, more tokens</span>
       </label>
       <div class="btn-row" style="margin-top:13px">
         <button class="btn btn-ghost" onclick="build(true)">Skip</button>
         <button class="btn btn-primary" id="btnBuild" onclick="build(false)">
           <span id="buildSpin" style="display:none" class="spin"></span>
+          <svg class="ic"><use href="#i-hammer"/></svg>
           <span id="buildLbl">Build</span>
         </button>
       </div>
     </div>
 
     <div class="card" id="intentCard">
-      <div class="card-h violet"><span class="k"></span>Build spec</div>
+      <div class="card-h violet"><svg class="ic"><use href="#i-cube"/></svg>Build spec</div>
       <div id="intentBox"></div>
     </div>
 
     <div class="card" id="reviewCard">
-      <div class="card-h amber"><span class="k"></span>Reviewer notes</div>
-      <div class="score" id="scoreRow" style="display:none"><b id="scoreVal">—</b><small>/ 100</small></div>
+      <div class="card-h amber"><svg class="ic"><use href="#i-gauge"/></svg>Quality review</div>
+      <div class="score" id="scoreRow" style="display:none">
+        <svg class="ring" viewBox="0 0 48 48"><circle class="rbg" cx="24" cy="24" r="20"/><circle class="rfg" id="scoreArc" cx="24" cy="24" r="20"/></svg>
+        <div><b id="scoreVal">—</b><small>quality / 100</small></div>
+      </div>
       <div class="prose" id="reviewText" style="color:var(--muted)"></div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:auto">
-      <button class="btn btn-primary" id="btnExec" disabled onclick="countdown()">Place in Minecraft</button>
+      <button class="btn btn-primary" id="btnExec" disabled onclick="countdown()">
+        <svg class="ic"><use href="#i-play"/></svg><span id="execLbl">Place in Minecraft</span>
+      </button>
       <div id="placeCtl" style="display:none;flex-direction:column;gap:8px">
         <div class="btn-row">
-          <button class="btn btn-dark" id="btnPause" style="flex:1" onclick="togglePause()">Pause</button>
-          <button class="btn btn-ghost" id="btnStop" style="flex:1" onclick="stopExec()">Stop</button>
+          <button class="btn btn-dark" id="btnPause" style="flex:1" onclick="togglePause()">
+            <svg class="ic"><use id="pauseIco" href="#i-pause"/></svg><span id="pauseLbl">Pause</span>
+          </button>
+          <button class="btn btn-ghost" id="btnStop" style="flex:1" onclick="stopExec()">
+            <svg class="ic"><use href="#i-stop"/></svg>Stop
+          </button>
         </div>
+        <div class="pp-track"><i id="ppBar"></i></div>
         <div class="hint" id="placeProg" style="margin:0">Placing…</div>
       </div>
-      <div id="placeRec" style="display:none;font-size:12px;line-height:1.6;color:var(--warn);background:var(--warn-soft);border:1px solid #efe0b3;border-radius:8px;padding:9px 11px">
+      <div id="placeRec" style="display:none;font-size:12px;line-height:1.6;color:var(--warn);background:var(--warn-soft);border:1px solid color-mix(in srgb, var(--warn) 30%, transparent);border-radius:8px;padding:9px 11px">
         <b>Large build.</b> Keyboard placement types one command at a time (~12/sec).
         Use <b>Export datapack</b> (top-right) for instant in-game placement.
       </div>
       <div class="hint">
         Focus the Minecraft window <b>before</b> placing — a 3-second countdown gives you time.
-        Or use <b>Export datapack</b> (top-right of the output) to drop a <span style="font-family:var(--mono)">/function</span> pack into your world.
+        Or use <b>Export datapack</b> to drop a <span style="font-family:var(--mono)">/function</span> pack into your world.
       </div>
     </div>
   </div>
@@ -399,19 +614,21 @@
   <!-- ── WORKSPACE ─────────────────────────────────────── -->
   <div class="workspace">
     <div class="ws-top">
-      <div class="tabs">
-        <div class="tab on" id="tab-all" onclick="tab('all')">All <span class="ct" id="c-all">0</span></div>
-        <div class="tab" id="tab-ext" onclick="tab('ext')">Structure <span class="ct" id="c-ext">0</span></div>
-        <div class="tab" id="tab-int" onclick="tab('int')">Interior <span class="ct" id="c-int">0</span></div>
+      <div class="tabs" role="tablist">
+        <button class="tab on" id="tab-all" onclick="tab('all')"><svg class="ic"><use href="#i-layers"/></svg>All <span class="ct" id="c-all">0</span></button>
+        <button class="tab" id="tab-ext" onclick="tab('ext')"><svg class="ic"><use href="#i-cube"/></svg><span id="lblExt">Structure</span> <span class="ct" id="c-ext">0</span></button>
+        <button class="tab" id="tab-int" onclick="tab('int')"><svg class="ic"><use href="#i-lamp"/></svg>Interior <span class="ct" id="c-int">0</span></button>
+      </div>
+      <div class="filter">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input id="filter" placeholder="Filter commands… (e.g. lantern)" oninput="onFilter()" />
       </div>
       <div class="ws-actions">
         <button class="icon-btn" id="btnCopy" disabled onclick="copyAll()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-          Copy
+          <svg class="ic ic-sm"><use id="copyIco" href="#i-copy"/></svg><span id="copyLbl">Copy</span>
         </button>
         <button class="icon-btn" id="btnExport" disabled onclick="exportPack()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-          Export datapack
+          <svg class="ic ic-sm"><use href="#i-download"/></svg>Export datapack
         </button>
       </div>
     </div>
@@ -424,15 +641,23 @@
     </div>
 
     <div class="ws-body">
-      <div class="statusbar" id="statusbar">
+      <div class="statusbar" id="statusbar" aria-live="polite">
         <span class="meta">Describe a build and click <b>Brainstorm &amp; plan</b> to begin.</span>
       </div>
       <div class="errbox" id="errbox"></div>
       <div class="fixbox" id="fixbox"></div>
       <div class="cmds" id="cmds">
         <div class="empty">
-          <div class="e-t">No commands yet</div>
-          <div class="e-s">Your generated <span style="font-family:var(--mono)">/fill</span> and <span style="font-family:var(--mono)">/setblock</span> commands will appear here, validated and ready to run.</div>
+          <svg class="ic ghost"><use href="#i-cube"/></svg>
+          <div class="e-t">Start with an idea</div>
+          <div class="e-s">Every command is validated and repaired before it reaches your world. Try one of these:</div>
+          <div class="samples">
+            <button class="sample" onclick="sample(0)"><svg class="ic"><use href="#i-house"/></svg><span><span class="s-t">Cozy medieval cottage</span><span class="s-m" style="display:block">Shell 2.0 · single build</span></span></button>
+            <button class="sample" onclick="sample(1)"><svg class="ic"><use href="#i-city"/></svg><span><span class="s-t">Victorian industrial city</span><span class="s-m" style="display:block">City engine · districts &amp; rail</span></span></button>
+            <button class="sample" onclick="sample(2)"><svg class="ic"><use href="#i-factory"/></svg><span><span class="s-t">Nestlé chocolate plant</span><span class="s-m" style="display:block">Factory engine · hygiene-zoned flow</span></span></button>
+            <button class="sample" onclick="sample(3)"><svg class="ic"><use href="#i-factory"/></svg><span><span class="s-t">Airbus final assembly</span><span class="s-m" style="display:block">Factory engine · hangar &amp; flight line</span></span></button>
+          </div>
+          <div class="kbd-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to brainstorm &amp; plan</div>
         </div>
       </div>
     </div>
@@ -444,12 +669,50 @@
   <div class="big" id="cdNum">3</div>
   <div class="s">Pasting starts automatically…</div>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="veil" id="modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="m-ico"><svg class="ic"><use href="#i-alert"/></svg></div>
+    <h3 id="mTitle"></h3>
+    <p id="mBody"></p>
+    <div class="m-actions">
+      <button class="btn btn-ghost" id="mCancel"></button>
+      <button class="btn btn-primary" id="mOk"></button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script>
   const S = { mode: 'dsl', brief: '', questions: [], answers: {}, all: [], ext: [], int: [], curTab: 'all', usage: null,
               exec: { method: 'keyboard', rate: 12 } };
-  fetch('/exec_info').then(r => r.json()).then(i => { S.exec = i; updatePlaceButton(); }).catch(() => {});
+
+  const ic = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+
+  // ── Theme ────────────────────────────────────────────────
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.getElementById('themeIco').setAttribute('href', t === 'dark' ? '#i-sun' : '#i-moon');
+  }
+  function toggleTheme() {
+    const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('bs-theme', t); applyTheme(t);
+  }
+  applyTheme(new URLSearchParams(location.search).get('theme') ||
+    localStorage.getItem('bs-theme') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+  // ── Exec method badge (RCON vs keyboard) ─────────────────
+  function setExecBadge() {
+    const b = document.getElementById('execBadge');
+    const rcon = S.exec.method === 'rcon';
+    b.classList.toggle('rcon', rcon);
+    document.getElementById('execIco').setAttribute('href', rcon ? '#i-zap' : '#i-keyboard');
+    document.getElementById('execLblTop').textContent = (rcon ? 'RCON · ' : 'Keyboard · ') + S.exec.rate + '/s';
+  }
+  fetch('/exec_info').then(r => r.json()).then(i => { S.exec = i; setExecBadge(); updatePlaceButton(); }).catch(() => {});
+  setExecBadge();
 
   const FLOWS = {
     dsl:    ['Intent', 'Architecture', 'Furnish', 'Light', 'Validate'],
@@ -468,9 +731,24 @@
   function setMode(m) {
     S.mode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
-    const extLbl = { dsl: 'Structure ', city: 'Buildings ', factory: 'Buildings ', legacy: 'Exterior ' }[m] || 'Structure ';
-    document.getElementById('tab-ext').firstChild.textContent = extLbl;
+    document.getElementById('lblExt').textContent =
+      ({ dsl: 'Structure', city: 'Buildings', factory: 'Buildings', legacy: 'Exterior' }[m] || 'Structure');
     renderFlow();
+  }
+
+  // ── Sample prompts (empty state) ─────────────────────────
+  const SAMPLES = [
+    { p: 'A cozy medieval stone cottage with a fireplace, a small library, and warm lantern light', m: 'dsl' },
+    { p: 'A victorian industrial city with a waterfront, rail yards and a grand civic square', m: 'city' },
+    { p: 'Build me a Nestlé chocolate factory with a rail spur', m: 'factory' },
+    { p: 'An Airbus final assembly plant with a flight line', m: 'factory' },
+  ];
+  function sample(i) {
+    const s = SAMPLES[i];
+    document.getElementById('prompt').value = s.p;
+    setMode(s.m);
+    document.getElementById('prompt').focus();
+    toast('Prompt loaded — Brainstorm & plan when ready.', 'info');
   }
 
   // ── Progress bar (elapsed + estimated remaining) ─────────
@@ -502,13 +780,13 @@
   // Place-button ETA from the real path: RCON ≈ 150 cmd/s, keyboard ≈ 12 cmd/s.
   function updatePlaceButton() {
     const n = S.all.length;
-    const btn = document.getElementById('btnExec');
+    const lbl = document.getElementById('execLbl');
     const rec = document.getElementById('placeRec');
-    if (!n) { btn.textContent = 'Place in Minecraft'; rec.style.display = 'none'; return; }
+    if (!n) { lbl.textContent = 'Place in Minecraft'; rec.style.display = 'none'; return; }
     const secs = Math.round(n / S.exec.rate);
     const t = secs < 90 ? `${secs}s` : `${Math.round(secs / 60)} min`;
     const via = S.exec.method === 'rcon' ? ' · RCON' : '';
-    btn.textContent = `Place in Minecraft (~${t}${via})`;
+    lbl.textContent = `Place in Minecraft (~${t}${via})`;
     rec.style.display = (n > 400 && S.exec.method !== 'rcon') ? 'block' : 'none';
   }
 
@@ -545,7 +823,11 @@
   }
 
   function renderBrief(d) {
-    document.getElementById('briefText').textContent = d.brainstorm || '';
+    // the agent returns `“Concept Name” — body`; give the name its own stage
+    const cEl = document.getElementById('conceptName');
+    const m = /^[“"](.+?)[”"]\s*—\s*([\s\S]*)$/.exec(d.brainstorm || '');
+    if (m) { cEl.textContent = m[1]; cEl.style.display = 'block'; document.getElementById('briefText').textContent = m[2]; }
+    else { cEl.style.display = 'none'; document.getElementById('briefText').textContent = d.brainstorm || ''; }
     const ab = document.getElementById('assumptionsBox');
     if ((d.assumptions||[]).length) {
       ab.innerHTML = '<div class="lbl" style="margin-bottom:7px">Defaults if unanswered</div>' +
@@ -558,26 +840,32 @@
   function renderQuestions(qs) {
     S.answers = {};
     const box = document.getElementById('questionsBox');
+    qProgress();
     if (!qs.length) { box.innerHTML = '<div class="hint">No clarifications needed — ready to build.</div>'; show('questionsCard'); return; }
     box.innerHTML = qs.map((q, qi) => `
       <div class="question">
-        <div class="q-text">${esc(q.question)}</div>
+        <div class="q-text"><span class="qn">${String(qi+1).padStart(2,'0')}</span>${esc(q.question)}</div>
         <div class="options" id="opts-${qi}">
-          ${(q.options||[]).map(o => `<span class="opt" onclick="pick(${qi}, this, '${esc(o).replace(/'/g,"\\'")}')">${esc(o)}</span>`).join('')}
+          ${(q.options||[]).map(o => `<button type="button" class="opt" onclick="pick(${qi}, this, '${esc(o).replace(/'/g,"\\'")}')">${ic('check','ic')}${esc(o)}</button>`).join('')}
         </div>
         ${q.allow_custom ? `<input class="q-custom" placeholder="…or type your own" oninput="custom(${qi}, this.value)">` : ''}
       </div>`).join('');
     show('questionsCard');
   }
+  function qProgress() {
+    const n = Object.keys(S.answers).length, t = S.questions.length;
+    document.getElementById('qCount').textContent = t ? `${n} / ${t} answered` : '';
+  }
   function pick(qi, el, val) {
     document.querySelectorAll(`#opts-${qi} .opt`).forEach(o => o.classList.remove('sel'));
-    el.classList.add('sel'); S.answers[S.questions[qi].question] = val;
+    el.classList.add('sel'); S.answers[S.questions[qi].question] = val; qProgress();
   }
   function custom(qi, val) {
     if (val.trim()) {
       document.querySelectorAll(`#opts-${qi} .opt`).forEach(o => o.classList.remove('sel'));
       S.answers[S.questions[qi].question] = val.trim();
     } else delete S.answers[S.questions[qi].question];
+    qProgress();
   }
 
   // ── Step 3: build ────────────────────────────────────────
@@ -588,20 +876,18 @@
     if (!prompt) { toast('Describe your build first.', 'error'); return; }
     // city-scale prompt in a building mode -> the city engine owns this
     if (/\b(city|town|village|metropolis|settlement)\b/i.test(prompt)) {
-      toast('City-scale prompt — switching to City mode.');
+      toast('City-scale prompt — switching to City mode.', 'info');
       setMode('city');
       return buildCity(skip);
     }
     // manufacturer prompt -> the factory engine owns this
     if (/\b(factory|manufactur\w*|gigafactory|brewery|steelworks|assembly\s+plant|production\s+plant)\b/i.test(prompt)) {
-      toast('Manufacturer prompt — switching to Factory mode.');
+      toast('Manufacturer prompt — switching to Factory mode.', 'info');
       setMode('factory');
       return buildFactory(skip);
     }
     busy('build', true); setStep(3);
-    document.getElementById('btnExec').disabled = true;
-    document.getElementById('btnExport').disabled = true;
-    document.getElementById('btnCopy').disabled = true;
+    ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = true);
     clearOutput(); resetStages(); animateStages();
     startProgress(refineEst(), S.mode === 'legacy' ? 'Running agents…' : 'Designing & building…');
 
@@ -615,13 +901,13 @@
       });
       if (data.error) { failStages(); status('error', data.error); toast(data.error, 'error'); return; }
       if (data.city_redirect) {   // server-side fallback for city-scale prompts
-        toast('City-scale prompt — switching to City mode.');
+        toast('City-scale prompt — switching to City mode.', 'info');
         setMode('city');
         setTimeout(() => buildCity(skip), 0);  // after this call's finally{} cleanup
         return;
       }
       if (data.factory_redirect) {  // server-side fallback (e.g. brand names like Ford)
-        toast('Manufacturer prompt — switching to Factory mode.');
+        toast('Manufacturer prompt — switching to Factory mode.', 'info');
         setMode('factory');
         setTimeout(() => buildFactory(skip), 0);
         return;
@@ -636,9 +922,7 @@
       counts(); renderIntent(data.intent); renderReview(data); renderTab();
       renderStatus(data); renderFixes(data.repairs || []);
       if (S.all.length) {
-        document.getElementById('btnExec').disabled = false;
-        document.getElementById('btnExport').disabled = false;
-        document.getElementById('btnCopy').disabled = false;
+        ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = false);
         updatePlaceButton();
         setStep(4);
       }
@@ -710,10 +994,12 @@
     finally { busy('build', false); stopProgress(); }
   }
 
+  const svgFrame = inner => `<div style="margin:-2px 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset)">
+      <div style="max-height:220px;overflow:auto">${inner}</div></div>`;
+
   function renderFactory(d) {
     const p = d.plan_summary || {}, qa = d.qa || {};
-    let h = `<div style="margin:-2px 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset)">
-               <div style="max-height:220px;overflow:auto">${d.svg || ''}</div></div>`;
+    let h = svgFrame(d.svg || '');
     h += [['Company', p.company || '—'], ['Industry', p.industry], ['Product', p.product],
           ['Era', p.era], ['Size', p.size_class], ['Rail spur', p.rail ? 'yes' : 'no']]
       .map(([k,v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${esc(v==null?'—':v)}</span></div>`).join('');
@@ -722,18 +1008,14 @@
     if ((p.signature||[]).length) h += `<div class="chips">${p.signature.map(s => `<span class="c">${esc(s)}</span>`).join('')}</div>`;
     document.getElementById('intentBox').innerHTML = h;
     show('intentCard');
-    const sr = document.getElementById('scoreRow');
-    document.getElementById('scoreVal').textContent = qa.total != null ? qa.total : '—';
-    sr.style.display = 'flex';
-    document.getElementById('reviewText').innerHTML = Object.entries(qa.metrics||{})
-      .map(([k,v]) => `${esc(k)}: <b style="color:${v>=80?'var(--good)':'var(--bad)'}">${v}</b>`).join(' &nbsp;·&nbsp; ');
+    setScore(qa.total);
+    document.getElementById('reviewText').innerHTML = qaBars(qa.metrics || {});
     show('reviewCard');
   }
 
   function renderCity(d) {
     const p = d.plan_summary || {}, qa = d.qa || {};
-    let h = `<div style="margin:-2px 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset)">
-               <div style="max-height:200px;overflow:auto" >${d.svg || ''}</div></div>`;
+    let h = svgFrame(d.svg || '');
     h += [['Size', p.size_class], ['Era', p.era], ['Buildings', p.buildings],
           ['Districts', (p.districts||[]).join(', ')], ['Waterfront', p.waterfront ? 'yes' : 'no']]
       .map(([k,v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${esc(v==null?'—':v)}</span></div>`).join('');
@@ -743,64 +1025,128 @@
       <div class="chips">${chains.map(c => `<span class="c">${esc(c.replace(' -> ', ' → '))}</span>`).join('')}</div>`;
     document.getElementById('intentBox').innerHTML = h;
     show('intentCard');
-    // QA into the review card
-    const sr = document.getElementById('scoreRow');
-    document.getElementById('scoreVal').textContent = qa.total != null ? qa.total : '—';
-    sr.style.display = 'flex';
-    document.getElementById('reviewText').innerHTML = Object.entries(qa.metrics||{})
-      .map(([k,v]) => `${esc(k)}: <b style="color:${v>=80?'var(--good)':'var(--bad)'}">${v}</b>`).join(' &nbsp;·&nbsp; ');
+    setScore(qa.total);
+    document.getElementById('reviewText').innerHTML = qaBars(qa.metrics || {});
     show('reviewCard');
+  }
+
+  // score gauge: animate the ring to the value, color by band
+  function setScore(v) {
+    const sr = document.getElementById('scoreRow');
+    if (v == null) { sr.style.display = 'none'; return; }
+    sr.style.display = 'flex';
+    document.getElementById('scoreVal').textContent = v;
+    const arc = document.getElementById('scoreArc');
+    const C = 125.7;
+    arc.style.stroke = v >= 80 ? 'var(--good)' : v >= 55 ? 'var(--warn)' : 'var(--bad)';
+    requestAnimationFrame(() => { arc.style.strokeDashoffset = (C * (1 - Math.min(100, v) / 100)).toFixed(1); });
+  }
+  function qaBars(metrics) {
+    const rows = Object.entries(metrics);
+    if (!rows.length) return '';
+    return `<div class="qa">` + rows.map(([k, v]) =>
+      `<div class="qa-row"><span>${esc(k)}</span><span class="qa-track"><i style="width:${Math.min(100,v)}%;background:${v>=80?'var(--good)':v>=55?'var(--warn)':'var(--bad)'}"></i></span><b>${v}</b></div>`
+    ).join('') + `</div>`;
   }
 
   function renderStatusCity(d) {
     const sb = document.getElementById('statusbar'), qa = d.qa || {};
-    let h = (qa.failing && qa.failing.length) ? `<span class="pill pill-err">${qa.failing.length} QA issue(s)</span>`
-                                              : `<span class="pill pill-ok">QA ${qa.total}/100</span>`;
+    let h = (qa.failing && qa.failing.length)
+      ? `<span class="pill pill-err">${ic('alert')}${qa.failing.length} QA issue(s)</span>`
+      : `<span class="pill pill-ok">${ic('check')}QA ${qa.total}/100</span>`;
     const ps = d.plan_summary || {};
     const built = ps.buildings != null ? ps.buildings : ((ps.stages||[]).length + (ps.support||[]).length);
     h += `<span class="meta"><b>${(d.command_count||S.all.length).toLocaleString()}</b> commands · <b>${built}</b> buildings</span>`;
-    if (S.usage && S.usage.total_tokens != null) {
-      const t = S.usage.total_tokens, pct = Math.min(100, Math.round(t/40000*100));
-      h += `<span class="tok"><span class="bar"><i style="width:${pct}%"></i></span><b>${t.toLocaleString()}</b> tokens</span>`;
-    }
+    h += tokenMeter(40000);
     sb.innerHTML = h;
     document.getElementById('errbox').style.display = 'none';
+  }
+
+  function tokenMeter(budget) {
+    if (!S.usage || S.usage.total_tokens == null) return '';
+    const t = S.usage.total_tokens, pct = Math.min(100, Math.round(t / budget * 100));
+    return `<span class="tok" title="LLM tokens used (budget ${budget.toLocaleString()})">${ic('coin','ic ic-sm')}<span class="bar"><i style="width:${pct}%"></i></span><b>${t.toLocaleString()}</b></span>`;
   }
 
   function animateStages() {
     const seq = FLOWS[S.mode]; stage(0, 'run'); let i = 0;
     S._anim = setInterval(() => {
-      stage(seq[i] !== undefined ? i : i, 'ok'); i++;
+      stage(i, 'ok'); i++;
       if (i < seq.length) stage(i, 'run'); else clearInterval(S._anim);
     }, 520);
   }
   function failStages() { clearInterval(S._anim); document.querySelectorAll('.stg.run').forEach(e => e.className = 'stg'); }
 
-  // ── Rendering ────────────────────────────────────────────
+  // ── Output rendering (virtualized: cities are 30k+ rows) ──
   function counts() {
-    document.getElementById('c-all').textContent = S.all.length;
-    document.getElementById('c-ext').textContent = S.ext.length;
-    document.getElementById('c-int').textContent = S.int.length;
+    document.getElementById('c-all').textContent = S.all.length.toLocaleString();
+    document.getElementById('c-ext').textContent = S.ext.length.toLocaleString();
+    document.getElementById('c-int').textContent = S.int.length.toLocaleString();
   }
   function tab(t) {
     S.curTab = t;
     ['all','ext','int'].forEach(x => document.getElementById('tab-'+x).classList.toggle('on', x===t));
     renderTab();
   }
+
+  let _fT = null;
+  function onFilter() { clearTimeout(_fT); _fT = setTimeout(renderTab, 160); }
+
+  const VIEW = { items: [], pos: 0, CHUNK: 400 };
   function renderTab() {
     const c = document.getElementById('cmds');
-    const list = S.curTab === 'all' ? S.all : (S.curTab === 'ext' ? S.ext : S.int);
-    if (!list.length) { c.innerHTML = `<div class="empty"><div class="e-t">Nothing in this view</div></div>`; return; }
+    const q = (document.getElementById('filter').value || '').trim().toLowerCase();
+    const match = cmd => !q || cmd.toLowerCase().includes(q);
+
+    // assemble the full item list (headers + rows), filter applied
+    const items = [];
+    const pushRows = (list, label, cls) => {
+      const rows = [];
+      list.forEach((cmd, i) => { if (match(cmd)) rows.push({ cmd, n: i + 1 }); });
+      if (rows.length) {
+        if (label) items.push({ h: `${label} · ${rows.length.toLocaleString()} command${rows.length!==1?'s':''}`, cls });
+        rows.forEach(r => items.push(r));
+      }
+    };
     if (S.curTab === 'all' && S.int.length) {
-      let h = '';
-      if (S.ext.length) h += grp('ext', S.mode === 'dsl' ? 'Structure' : 'Exterior', S.ext.length) + rows(S.ext);
-      if (S.int.length) h += grp('int', 'Interior', S.int.length) + rows(S.int);
-      c.innerHTML = h;
-    } else c.innerHTML = rows(list);
+      pushRows(S.ext, S.mode === 'dsl' ? 'Structure' : 'Exterior', 'ext');
+      pushRows(S.int, 'Interior', 'int');
+    } else {
+      const list = S.curTab === 'all' ? S.all : (S.curTab === 'ext' ? S.ext : S.int);
+      pushRows(list, q ? 'Matches' : '', 'ext');
+    }
+
+    if (!items.length) {
+      c.innerHTML = `<div class="empty"><svg class="ic ghost"><use href="#i-search"/></svg>
+        <div class="e-t">${q ? 'No matches' : 'Nothing in this view'}</div>
+        ${q ? `<div class="e-s">No command contains “${esc(q)}”.</div>` : ''}</div>`;
+      return;
+    }
+    VIEW.items = items; VIEW.pos = 0;
+    c.innerHTML = '';
+    appendChunk();
     c.scrollTop = 0;
   }
-  const grp = (cls, t, n) => `<div class="group-h ${cls}"><span class="d"></span>${t} · ${n} commands</div>`;
-  const rows = list => list.map((cmd, i) => `<div class="crow"><span class="cn">${i+1}</span><span class="ct">${hl(cmd)}</span></div>`).join('');
+  function appendChunk() {
+    const c = document.getElementById('cmds');
+    const old = document.getElementById('moreRow'); if (old) old.remove();
+    const end = Math.min(VIEW.items.length, VIEW.pos + VIEW.CHUNK);
+    let h = '';
+    for (let i = VIEW.pos; i < end; i++) {
+      const it = VIEW.items[i];
+      h += it.h !== undefined
+        ? `<div class="group-h ${it.cls}"><span class="d"></span>${it.h}</div>`
+        : `<div class="crow"><span class="cn">${it.n}</span><span class="ct2">${hl(it.cmd)}</span></div>`;
+    }
+    VIEW.pos = end;
+    if (end < VIEW.items.length)
+      h += `<div class="more-row" id="moreRow">… ${(VIEW.items.length - end).toLocaleString()} more — keep scrolling</div>`;
+    c.insertAdjacentHTML('beforeend', h);
+  }
+  document.getElementById('cmds').addEventListener('scroll', e => {
+    const c = e.target;
+    if (VIEW.pos < VIEW.items.length && c.scrollHeight - c.scrollTop - c.clientHeight < 900) appendChunk();
+  });
 
   function hl(cmd) {
     return esc(cmd)
@@ -830,23 +1176,18 @@
 
   function renderReview(d) {
     if (!d.review) { hide('reviewCard'); return; }
-    const sr = document.getElementById('scoreRow');
-    if (d.score != null) { document.getElementById('scoreVal').textContent = d.score; sr.style.display = 'flex'; }
-    else sr.style.display = 'none';
+    setScore(d.score != null ? d.score : null);
     document.getElementById('reviewText').textContent = d.review;
     show('reviewCard');
   }
 
   function renderStatus(d) {
     const sb = document.getElementById('statusbar');
-    let h = d.valid ? `<span class="pill pill-ok">Ready to run</span>`
-                    : `<span class="pill pill-err">${(d.errors||[]).length} issue(s)</span>`;
-    h += `<span class="meta"><b>${S.all.length}</b> commands</span>`;
-    if (S.usage && S.usage.total_tokens != null) {
-      const t = S.usage.total_tokens, budget = 6000, pct = Math.min(100, Math.round(t/budget*100));
-      h += `<span class="tok"><span class="bar"><i style="width:${pct}%"></i></span><b>${t.toLocaleString()}</b> tokens</span>`;
-    }
-    if ((d.repairs||[]).length) h += `<span class="pill pill-fix" onclick="toggleFix()">${d.repairs.length} auto-fixed</span>`;
+    let h = d.valid ? `<span class="pill pill-ok">${ic('check')}Ready to run</span>`
+                    : `<span class="pill pill-err">${ic('alert')}${(d.errors||[]).length} issue(s)</span>`;
+    h += `<span class="meta"><b>${S.all.length.toLocaleString()}</b> commands</span>`;
+    h += tokenMeter(6000);
+    if ((d.repairs||[]).length) h += `<button class="pill pill-fix" onclick="toggleFix()">${ic('wand')}${d.repairs.length} auto-fixed</button>`;
     sb.innerHTML = h;
     const eb = document.getElementById('errbox');
     if (!d.valid && (d.errors||[]).length) { eb.innerHTML = d.errors.map(e => '• ' + esc(e)).join('<br>'); eb.style.display = 'block'; }
@@ -863,7 +1204,15 @@
 
   // ── Copy + export ────────────────────────────────────────
   async function copyAll() {
-    try { await navigator.clipboard.writeText(S.all.join('\n')); toast(`Copied ${S.all.length} commands.`, 'success'); }
+    try {
+      await navigator.clipboard.writeText(S.all.join('\n'));
+      // success morph: icon flips to a check for a moment
+      document.getElementById('copyIco').setAttribute('href', '#i-check');
+      document.getElementById('copyLbl').textContent = 'Copied';
+      setTimeout(() => { document.getElementById('copyIco').setAttribute('href', '#i-copy');
+                         document.getElementById('copyLbl').textContent = 'Copy'; }, 1600);
+      toast(`Copied ${S.all.length.toLocaleString()} commands.`, 'success');
+    }
     catch (e) { toast('Copy failed', 'error'); }
   }
   async function exportPack() {
@@ -885,13 +1234,40 @@
     finally { btn.disabled = false; btn.innerHTML = label; }
   }
 
+  // ── Confirm modal (replaces native confirm()) ────────────
+  function confirmModal({ title, body, okText = 'Continue', cancelText = 'Cancel' }) {
+    return new Promise(resolve => {
+      const veil = document.getElementById('modal');
+      document.getElementById('mTitle').textContent = title;
+      document.getElementById('mBody').innerHTML = body;
+      const ok = document.getElementById('mOk'), cancel = document.getElementById('mCancel');
+      ok.textContent = okText; cancel.textContent = cancelText;
+      const close = v => { veil.classList.remove('show'); document.removeEventListener('keydown', onKey); resolve(v); };
+      const onKey = e => { if (e.key === 'Escape') close(false); };
+      ok.onclick = () => close(true);
+      cancel.onclick = () => close(false);
+      veil.onclick = e => { if (e.target === veil) close(false); };
+      document.addEventListener('keydown', onKey);
+      veil.classList.add('show');
+      cancel.focus();
+    });
+  }
+
   // ── Execute ──────────────────────────────────────────────
-  function countdown() {
+  async function countdown() {
     if (!S.all.length) return;
     if (S.exec.method === 'rcon') { runExec(); return; }   // no window focus needed
     if (S.all.length > 2500) {  // keyboard at ~12 cmd/s: this is still minutes
       const mins = Math.round(S.all.length / S.exec.rate / 60);
-      if (!confirm(`This build is ${S.all.length.toLocaleString()} commands — keyboard placement would take ~${mins} minutes (you can Pause/Stop it from the sidebar).\n\nRecommended: Cancel, then use "Export datapack" (instant in-game via /function).\n\nPlace by keyboard anyway?`)) return;
+      const go = await confirmModal({
+        title: 'This is a big one',
+        body: `<b>${S.all.length.toLocaleString()} commands</b> by keyboard is roughly <b>~${mins} minutes</b> of typing
+               (you can Pause or Stop from the sidebar).<br><br>
+               Recommended: <b>Export datapack</b> instead — it places the whole build in-game in under a second
+               via <span style="font-family:var(--mono)">/function</span>.`,
+        okText: 'Place by keyboard', cancelText: 'Cancel',
+      });
+      if (!go) return;
     }
     const ov = document.getElementById('overlay'), n = document.getElementById('cdNum');
     ov.style.display = 'flex'; let c = 3; n.textContent = c;
@@ -905,12 +1281,13 @@
         const st = await (await fetch('/execute_status')).json();
         document.getElementById('placeProg').textContent =
           `${st.placed.toLocaleString()} / ${st.total.toLocaleString()} placed` + (st.paused ? ' — paused' : '');
+        if (st.total) document.getElementById('ppBar').style.width = (st.placed / st.total * 100).toFixed(1) + '%';
       } catch (e) {}
     }, 500);
     try {
       const data = await post('/execute', { commands: S.all });
       if (data.error) { toast('Execution error: ' + data.error, 'error'); }
-      else if (data.status === 'stopped') toast(`Stopped after ${data.count.toLocaleString()} commands.`);
+      else if (data.status === 'stopped') toast(`Stopped after ${data.count.toLocaleString()} commands.`, 'info');
       else toast(`Done — placed ${data.count.toLocaleString()} commands${data.method === 'rcon' ? ' via RCON' : ''}.`, 'success');
     } catch (e) { toast('Network error during placement', 'error'); }
     finally { clearInterval(poll); showPlaceCtl(false); document.getElementById('btnExec').disabled = false; }
@@ -919,25 +1296,34 @@
   // ── Pause / stop the input agent mid-placement ───────────
   function showPlaceCtl(on) {
     document.getElementById('placeCtl').style.display = on ? 'flex' : 'none';
-    if (on) { document.getElementById('btnPause').textContent = 'Pause'; document.getElementById('placeProg').textContent = 'Placing…'; }
+    if (on) {
+      setPauseUI(false);
+      document.getElementById('placeProg').textContent = 'Placing…';
+      document.getElementById('ppBar').style.width = '0%';
+    }
+  }
+  function setPauseUI(paused) {
+    document.getElementById('pauseIco').setAttribute('href', paused ? '#i-play' : '#i-pause');
+    document.getElementById('pauseLbl').textContent = paused ? 'Resume' : 'Pause';
   }
   async function togglePause() {
     const btn = document.getElementById('btnPause');
+    const paused = document.getElementById('pauseLbl').textContent !== 'Pause';
     try {
-      if (btn.textContent === 'Pause') {
+      if (!paused) {
         await post('/execute_control', { action: 'pause' });
-        btn.textContent = 'Resume';
+        setPauseUI(true);
         return;
       }
       // Keyboard typing goes to the focused window, so give the user 3s to
       // switch back to Minecraft before keystrokes start flowing again.
       btn.disabled = true;
       if (S.exec.method === 'keyboard') {
-        toast('Resuming in 3s — switch to Minecraft now.');
+        toast('Resuming in 3s — switch to Minecraft now.', 'info');
         await new Promise(r => setTimeout(r, 3000));
       }
       await post('/execute_control', { action: 'resume' });
-      btn.textContent = 'Pause';
+      setPauseUI(false);
     } catch (e) { toast('Could not reach the placement agent', 'error'); }
     finally { btn.disabled = false; }
   }
@@ -960,20 +1346,29 @@
   }
   function clearOutput() {
     S.all = []; S.ext = []; S.int = []; S.usage = null; S.span = null; counts();
-    document.getElementById('cmds').innerHTML = `<div class="empty"><div class="e-t">Generating…</div><div class="e-s">The deterministic engine is assembling architecture, furnishing rooms, and validating every command.</div></div>`;
+    document.getElementById('filter').value = '';
+    document.getElementById('cmds').innerHTML =
+      `<div class="skel">` + [92,68,84,40,76,58,88,64,48,80,70,36].map(w => `<i style="width:${w}%"></i>`).join('') + `</div>`;
     document.getElementById('errbox').style.display = 'none';
     document.getElementById('fixbox').style.display = 'none';
     document.getElementById('statusbar').innerHTML = '<span class="meta">Running the pipeline…</span>';
   }
-  function status(type, msg) { document.getElementById('statusbar').innerHTML = `<span class="pill pill-err">${esc(type)}</span><span class="meta">${esc(msg)}</span>`; }
+  function status(type, msg) { document.getElementById('statusbar').innerHTML = `<span class="pill pill-err">${ic('alert')}${esc(type)}</span><span class="meta">${esc(msg)}</span>`; }
   const show = id => document.getElementById(id).classList.add('show');
   const hide = id => document.getElementById(id).classList.remove('show');
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-  function toast(msg, type='success') {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.className = `toast ${type} show`;
-    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 4200);
+
+  // toasts: stacked, iconed, self-dismissing
+  function toast(msg, type = 'success') {
+    const wrap = document.getElementById('toasts');
+    while (wrap.children.length >= 4) wrap.firstChild.remove();
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = ic(type === 'error' ? 'alert' : type === 'info' ? 'info' : 'check') + `<span>${esc(msg)}</span>`;
+    wrap.appendChild(el);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 260); }, 4200);
   }
+
   document.getElementById('prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) plan(); });
 
   // init

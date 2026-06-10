@@ -376,6 +376,10 @@
 
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:auto">
       <button class="btn btn-primary" id="btnExec" disabled onclick="countdown()">Place in Minecraft</button>
+      <div id="placeRec" style="display:none;font-size:12px;line-height:1.6;color:var(--warn);background:var(--warn-soft);border:1px solid #efe0b3;border-radius:8px;padding:9px 11px">
+        <b>Large build.</b> Keyboard placement types one command at a time (~4/sec).
+        Use <b>Export datapack</b> (top-right) for instant in-game placement.
+      </div>
       <div class="hint">
         Focus the Minecraft window <b>before</b> placing — a 3-second countdown gives you time.
         Or use <b>Export datapack</b> (top-right of the output) to drop a <span style="font-family:var(--mono)">/function</span> pack into your world.
@@ -483,6 +487,18 @@
     setTimeout(() => document.getElementById('progress').classList.remove('show'), 700);
   }
 
+  // Place-button ETA + datapack recommendation (keyboard ≈ 4-5 cmd/s).
+  function updatePlaceButton() {
+    const n = S.all.length;
+    const btn = document.getElementById('btnExec');
+    const rec = document.getElementById('placeRec');
+    if (!n) { btn.textContent = 'Place in Minecraft'; rec.style.display = 'none'; return; }
+    const secs = Math.round(n / 4.5);
+    const t = secs < 90 ? `${secs}s` : `${Math.round(secs / 60)} min`;
+    btn.textContent = `Place in Minecraft (~${t})`;
+    rec.style.display = n > 400 ? 'block' : 'none';
+  }
+
   function setStep(n) {
     document.querySelectorAll('.stp').forEach(el => {
       const s = +el.dataset.step;
@@ -584,6 +600,7 @@
         document.getElementById('btnExec').disabled = false;
         document.getElementById('btnExport').disabled = false;
         document.getElementById('btnCopy').disabled = false;
+        updatePlaceButton();
         setStep(4);
       }
       if ((data.repairs||[]).length) toast(`Auto-fixed ${data.repairs.length} issue${data.repairs.length!==1?'s':''} so every command runs.`, 'success');
@@ -618,6 +635,7 @@
       renderStatusCity(data);
       if (S.all.length) {
         ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = false);
+        updatePlaceButton();
         setStep(4);
       }
     } catch (e) { failStages(); toast('Network error', 'error'); }

@@ -3,6 +3,23 @@
 Running log of every spec ambiguity resolved during the v2 upgrade
 (per IMPLEMENTATION_SPEC §0.4). Newest first.
 
+## Phase G — UI redesign (Editorial Light)
+
+- **Full rethink of `templates/index.html`** at the user's explicit request (this
+  overrides spec §9.4's "don't regenerate index.html"). Direction chosen by the
+  user: **Editorial Light** — paper `#FAFAF8`, ink `#16181D`, single blue accent
+  `#2F6BFF`, hairline borders (no glow), big type scale, Inter + JetBrains Mono,
+  zero emoji (the old `◈ ✦ ▣ ★ ▶` glyphs and rainbow-quadrant logo read as "AI
+  slop"). The empty canvas uses a faint dotted blueprint grid.
+- **All flows preserved** (`/clarify` → `/generate` → `/execute`) and the JS
+  contract kept. **New v2 controls wired in:** Engine toggle (Shell 2.0 / Legacy →
+  sends `mode`), MC-version selector (feeds `target_mc_version` to generate +
+  export), a live **token meter** (usage vs the 6000 soft budget), **Copy** and
+  **Export datapack** actions (the latter downloads the zip from
+  `/export_datapack`), and a mode-aware pipeline strip (Intent→Architecture→
+  Furnish→Light→Validate for dsl). Verified via Flask test client: template
+  renders, dsl generate returns valid + token usage, datapack zip downloads.
+
 ## Phase E — Execution (datapack writer) — PARTIAL
 
 - **Delivered: `execution/datapack.py` + `/export_datapack`.** The spec calls the

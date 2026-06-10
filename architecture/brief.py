@@ -43,6 +43,9 @@ def seed_from(prompt: str, origin: Vec3 | dict) -> int:
     return int(h[:16], 16)
 
 
+MAX_SIDE = 48      # max footprint side for a single building
+MAX_HEIGHT = 32    # max total height for a single building
+
 _ARCHETYPE_BY_STRUCTURE = {
     "warehouse": "warehouse", "factory": "factory_hall", "office": "office_block",
     "rowhouse": "rowhouse_strip", "depot": "train_depot", "tower": "generic_building",
@@ -55,9 +58,12 @@ def intent_to_brief(intent: dict, origin: dict, *, prompt: str = "",
     from intent['size']; the lot is the footprint placed at the origin."""
     x, y, z = origin["x"], origin["y"], origin["z"]
     size = intent.get("size", {}) or {}
-    sx = max(5, int(size.get("x", 11)))
-    sz = max(5, int(size.get("z", 9)))
-    sy = max(4, int(size.get("y", 6)))
+    # Clamp to engine-sane bounds. The intent model can ask for huge structures
+    # ("a stadium") that would make the deterministic furnish/light passes blow up;
+    # a single building stays within these caps (cities tile many of them).
+    sx = min(MAX_SIDE, max(5, int(size.get("x", 11))))
+    sz = min(MAX_SIDE, max(5, int(size.get("z", 9))))
+    sy = min(MAX_HEIGHT, max(4, int(size.get("y", 6))))
     lot = Rect(x, z, x + sx - 1, z + sz - 1)
 
     style = str(intent.get("style", "") or "")

@@ -207,6 +207,18 @@
     .lnk { width: 18px; height: 2px; background: var(--line-2); margin: 0 4px; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
+    /* ── Progress bar ────────────────────────────────────────── */
+    .progress { display: none; flex-direction: column; gap: 6px; padding: 11px 16px;
+                border-bottom: 1px solid var(--line); background: var(--panel); flex-shrink: 0; }
+    .progress.show { display: flex; }
+    .progress-head { display: flex; justify-content: space-between; align-items: center;
+                     font-size: 12px; font-weight: 600; color: var(--ink); }
+    .progress-head .t { color: var(--muted); font-family: var(--mono); font-size: 11.5px; font-weight: 500; }
+    .progress-track { height: 6px; border-radius: 3px; background: var(--inset-2); overflow: hidden; }
+    .progress-track i { display: block; height: 100%; width: 0; border-radius: 3px;
+                        background: linear-gradient(90deg, var(--accent), #6ea0ff);
+                        transition: width 0.25s ease; }
+
     /* ── Status + output ─────────────────────────────────────── */
     .ws-body { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; overflow: hidden; }
     .statusbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 26px; flex-shrink: 0; }
@@ -393,6 +405,11 @@
 
     <div class="flow" id="flow"></div>
 
+    <div class="progress" id="progress">
+      <div class="progress-head"><span id="progLabel">Working…</span><span class="t" id="progTime"></span></div>
+      <div class="progress-track"><i id="progBar"></i></div>
+    </div>
+
     <div class="ws-body">
       <div class="statusbar" id="statusbar">
         <span class="meta">Describe a build and click <b>Brainstorm &amp; plan</b> to begin.</span>
@@ -440,6 +457,32 @@
     renderFlow();
   }
 
+  // ── Progress bar (elapsed + estimated remaining) ─────────
+  let _prog = { timer: null, t0: 0, est: 1 };
+  function startProgress(estSeconds, label) {
+    _prog.t0 = Date.now(); _prog.est = Math.max(1, estSeconds);
+    document.getElementById('progLabel').textContent = label || 'Working…';
+    document.getElementById('progress').classList.add('show');
+    document.getElementById('progBar').style.width = '2%';
+    clearInterval(_prog.timer);
+    _prog.timer = setInterval(() => {
+      const el = (Date.now() - _prog.t0) / 1000;
+      // ease toward 94% over the estimate; never claim done until the response lands
+      const pct = Math.min(94, 100 * (1 - Math.exp(-el / (_prog.est * 0.55))));
+      document.getElementById('progBar').style.width = pct.toFixed(1) + '%';
+      const rem = Math.max(0, _prog.est - el);
+      document.getElementById('progTime').textContent =
+        rem > 0 ? `${el.toFixed(0)}s elapsed · ~${rem.toFixed(0)}s left` : `${el.toFixed(0)}s · finishing…`;
+    }, 200);
+  }
+  function stopProgress(ok = true) {
+    clearInterval(_prog.timer);
+    const el = ((Date.now() - _prog.t0) / 1000).toFixed(0);
+    document.getElementById('progBar').style.width = '100%';
+    document.getElementById('progTime').textContent = ok ? `done in ${el}s` : 'stopped';
+    setTimeout(() => document.getElementById('progress').classList.remove('show'), 700);
+  }
+
   function setStep(n) {
     document.querySelectorAll('.stp').forEach(el => {
       const s = +el.dataset.step;
@@ -459,6 +502,7 @@
     const prompt = document.getElementById('prompt').value.trim();
     if (!prompt) { toast('Describe your build first.', 'error'); return; }
     busy('plan', true);
+    startProgress(6, 'Brainstorming & planning…');
     ['briefCard','questionsCard','intentCard','reviewCard'].forEach(hide);
     try {
       const data = await post('/clarify', { prompt });
@@ -468,7 +512,7 @@
       renderBrief(data); renderQuestions(data.questions || []);
       setStep(2);
     } catch (e) { toast('Network error', 'error'); }
-    finally { busy('plan', false); }
+    finally { busy('plan', false); stopProgress(); }
   }
 
   function renderBrief(d) {
@@ -517,6 +561,7 @@
     document.getElementById('btnExport').disabled = true;
     document.getElementById('btnCopy').disabled = true;
     clearOutput(); resetStages(); animateStages();
+    startProgress(refineEst(), S.mode === 'legacy' ? 'Running agents…' : 'Designing & building…');
 
     const refine = document.getElementById('refine').checked;
     try {
@@ -543,7 +588,13 @@
       }
       if ((data.repairs||[]).length) toast(`Auto-fixed ${data.repairs.length} issue${data.repairs.length!==1?'s':''} so every command runs.`, 'success');
     } catch (e) { failStages(); toast('Network error', 'error'); }
-    finally { busy('build', false); }
+    finally { busy('build', false); stopProgress(); }
+  }
+
+  function refineEst() {
+    const refine = document.getElementById('refine').checked;
+    if (S.mode === 'legacy') return 12;
+    return refine ? 14 : 6;   // refine runs the interior agent per room
   }
 
   // ── City build ───────────────────────────────────────────
@@ -553,6 +604,8 @@
     busy('build', true); setStep(3);
     ['btnExec','btnExport','btnCopy'].forEach(id => document.getElementById(id).disabled = true);
     clearOutput(); resetStages(); animateStages();
+    const sizeAns = String((S.answers||{}).size || (S.answers||{}).Size || 'M').toUpperCase()[0];
+    startProgress({ S: 12, M: 22, L: 40 }[sizeAns] || 22, 'Planning city & raising districts…');
     try {
       const data = await post('/generate_city', {
         prompt, origin: origin(), answers: skip ? {} : S.answers,
@@ -568,7 +621,7 @@
         setStep(4);
       }
     } catch (e) { failStages(); toast('Network error', 'error'); }
-    finally { busy('build', false); }
+    finally { busy('build', false); stopProgress(); }
   }
 
   function renderCity(d) {
